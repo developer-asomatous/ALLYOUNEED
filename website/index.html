@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AYN — All You Need | Free Media Saver & Player</title>
+  <meta name="description" content="AYN is the fastest media saver for Android. Save videos, audio, and images from 15+ platforms. 16x accelerated downloads. 100% free." />
+  <meta name="keywords" content="video downloader, media saver, Instagram saver, free media downloader, AYN" />
+  <meta name="theme-color" content="#050507" />
+  <meta property="og:title" content="AYN — All You Need | Free Media Saver" />
+  <meta property="og:description" content="Save any media. 15+ platforms. 16x fast. Built-in player. Free." />
+  <link rel="icon" type="image/png" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- DarkVeil WebGL Background (React Bits port) -->
+  <div id="darkveil-wrap" class="darkveil-container">
+    <canvas id="darkveil-canvas"></canvas>
+  </div>
+
+  <!-- Film Grain -->
+  <div class="grain"></div>
+
+  <!-- TargetCursor (React Bits port) -->
+  <div id="target-cursor" class="target-cursor-wrapper">
+    <div class="target-cursor-dot"></div>
+    <div class="target-cursor-corner corner-tl"></div>
+    <div class="target-cursor-corner corner-tr"></div>
+    <div class="target-cursor-corner corner-br"></div>
+    <div class="target-cursor-corner corner-bl"></div>
+  </div>
+
+  <!-- CardNav (React Bits port) -->
+  <div class="card-nav-container">
+    <nav id="card-nav" class="card-nav">
+      <div class="card-nav-top">
+        <div id="hamburger" class="hamburger-menu" role="button" aria-label="Open menu" tabindex="0">
+          <div class="hamburger-line"></div>
+          <div class="hamburger-line"></div>
+        </div>
+        <div class="logo-container">
+          <span class="nav-logo-text">AYN</span>
+        </div>
+        <a href="#download" class="card-nav-cta cursor-target">Download</a>
+      </div>
+      <div class="card-nav-content" aria-hidden="true">
+        <div class="nav-card" style="background-color:#1B1722">
+          <div class="nav-card-label">Platforms</div>
+          <div class="nav-card-links">
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> YouTube</a>
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> Instagram</a>
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> TikTok</a>
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> 12+ more</a>
+          </div>
+        </div>
+        <div class="nav-card" style="background-color:#1F1A2E">
+          <div class="nav-card-label">Features</div>
+          <div class="nav-card-links">
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> 16x Speed</a>
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> Torrent Engine</a>
+            <a href="#features" class="nav-card-link cursor-target"><span class="arrow">↗</span> Video Player</a>
+          </div>
+        </div>
+        <div class="nav-card" style="background-color:#231E30">
+          <div class="nav-card-label">Community</div>
+          <div class="nav-card-links">
+            <a href="https://t.me/allyouneed_app" target="_blank" class="nav-card-link cursor-target"><span class="arrow">↗</span> Telegram</a>
+            <a href="mailto:hey@allyouneed.app" class="nav-card-link cursor-target"><span class="arrow">↗</span> Contact</a>
+            <a href="privacy.html" class="nav-card-link cursor-target"><span class="arrow">↗</span> Privacy</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-logo-text">
+      <span class="logo-fancy">AYN</span>
+    </div>
+    <h1 class="hero-title">
+      <span class="split-line" data-split>Save</span>
+      <span class="split-line gradient-word" data-split>anything</span>
+      <span class="split-line" data-split>from</span>
+      <span class="split-line gradient-word" data-split>anywhere</span>
+    </h1>
+    <p class="hero-sub blur-reveal">
+      Paste a link. Pick quality. Download at 16x speed.<br/>
+      Videos, music, images — 15+ platforms. Forever free.
+    </p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-glow cursor-target">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK
+      </a>
+      <a href="https://t.me/allyouneed_app" class="btn-ghost cursor-target" target="_blank">Join Telegram →</a>
+    </div>
+    <div class="hero-badge">
+      <span class="pulse-dot"></span>
+      <span class="shiny-text">v1.1 — Torrent + 16x Speed + AYN Player</span>
+    </div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee-wrap">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>▶ YouTube</span><span>📸 Instagram</span><span>🎵 TikTok</span>
+        <span>𝕏 Twitter</span><span>📘 Facebook</span><span>🤖 Reddit</span>
+        <span>🎮 Twitch</span><span>🎥 Vimeo</span><span>🎶 SoundCloud</span>
+        <span>📌 Pinterest</span><span>🧲 Torrents</span><span>🔗 Any URL</span>
+        <span>▶ YouTube</span><span>📸 Instagram</span><span>🎵 TikTok</span>
+        <span>𝕏 Twitter</span><span>📘 Facebook</span><span>🤖 Reddit</span>
+        <span>🎮 Twitch</span><span>🎥 Vimeo</span><span>🎶 SoundCloud</span>
+        <span>📌 Pinterest</span><span>🧲 Torrents</span><span>🔗 Any URL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bento Features -->
+  <section class="bento" id="features">
+    <h2 class="section-tag reveal">Features</h2>
+    <h3 class="section-title reveal">Built different.</h3>
+    <div class="bento-grid">
+      <div class="bento-card bento-wide reveal cursor-target" data-tilt>
+        <div class="bento-icon">⚡</div>
+        <h4>16x Accelerated Downloads</h4>
+        <p>Powered by aria2c — splits every download into 16 parallel connections. Same tech as IDM and JDownloader.</p>
+        <div class="bento-visual speed-bars">
+          <div class="bar" style="--w:12%;--d:0s">Others</div>
+          <div class="bar active" style="--w:95%;--d:0.3s">AYN</div>
+        </div>
+      </div>
+      <div class="bento-card reveal cursor-target" data-tilt>
+        <div class="bento-icon">🎬</div>
+        <h4>AYN Player</h4>
+        <p>Gesture controls, double-tap skip, playback speed, and resume from last position.</p>
+      </div>
+      <div class="bento-card reveal cursor-target" data-tilt>
+        <div class="bento-icon">🧲</div>
+        <h4>Torrent Support</h4>
+        <p>Paste magnet links. Pick files. Download with 20 trackers and 200 peer connections.</p>
+      </div>
+      <div class="bento-card reveal cursor-target" data-tilt>
+        <div class="bento-icon">📱</div>
+        <h4>Share to Save</h4>
+        <p>Share any link from any app directly to AYN. Zero copy-paste needed.</p>
+      </div>
+      <div class="bento-card bento-wide reveal cursor-target" data-tilt>
+        <div class="bento-icon">🔒</div>
+        <h4>Offline-First Architecture</h4>
+        <p>Downloads survive app restarts, crashes, and network drops. 3 concurrent downloads with automatic retry and resume. Your queue is persistent — no progress is ever lost.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Speed Section -->
+  <section class="speed-section" id="speed">
+    <h2 class="section-tag reveal">Performance</h2>
+    <h3 class="section-title reveal">Stupidly fast.</h3>
+    <div class="speed-grid reveal">
+      <div class="speed-card cursor-target">
+        <div class="speed-label">Regular apps</div>
+        <div class="speed-num">2-5</div>
+        <div class="speed-unit">MB/s</div>
+        <div class="speed-detail">1 connection</div>
+      </div>
+      <div class="speed-vs">vs</div>
+      <div class="speed-card speed-hero cursor-target">
+        <div class="speed-label">AYN</div>
+        <div class="speed-num" id="speed-counter">0</div>
+        <div class="speed-unit">MB/s</div>
+        <div class="speed-detail">16 parallel connections</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download CTA -->
+  <section class="cta-section" id="download">
+    <div class="cta-box reveal">
+      <div class="cta-glow"></div>
+      <h2>Ready to download<br/><em>everything</em>?</h2>
+      <p>Free forever. No sign-up. No Play Store needed.</p>
+      <a href="https://github.com/AYN-App/releases/releases/latest/download/AYN-v1.1.0.apk" class="btn-glow btn-lg cursor-target" id="dl-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK
+      </a>
+      <div class="cta-meta">
+        <span>📦 ~25 MB</span>
+        <span>🤖 Android 8+</span>
+        <span>🛡️ Virus-free</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Strip -->
+  <div class="trust reveal">
+    <span>✓ No account needed</span>
+    <span>✓ No data collection</span>
+    <span>✓ No tracking</span>
+    <span>✓ Open source</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="https://t.me/allyouneed_app" target="_blank">Telegram</a>
+      <a href="mailto:hey@allyouneed.app">Contact</a>
+    </div>
+    <p>© 2026 AYN. Made with 💜 in India.</p>
+  </footer>
+
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Main Script (DarkVeil WebGL inlined, no external deps) -->
+  <script src="script.js"></script>
+</body>
+</html>
