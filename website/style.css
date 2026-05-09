@@ -8,14 +8,14 @@
   --surface: rgba(255,255,255,0.03);
   --surface-hover: rgba(255,255,255,0.06);
   --border: rgba(255,255,255,0.06);
-  --border-hover: rgba(168,85,247,0.25);
+  --border-hover: rgba(20,184,166,0.25);
   --text: #EEEEF3;
   --text-2: #8B8B9E;
   --text-3: #55556A;
-  --accent: #A855F7;
-  --accent-2: #6366F1;
-  --accent-pink: #EC4899;
-  --glow: rgba(168,85,247,0.15);
+  --accent: #14B8A6;
+  --accent-2: #06B6D4;
+  --accent-pink: #22D3EE;
+  --glow: rgba(20,184,166,0.15);
   --radius: 18px;
   --radius-sm: 12px;
 }
@@ -39,14 +39,14 @@ a,button,[class*="cursor-target"]{cursor:none}
   opacity:0.55;
   /* CSS fallback aurora when WebGL fails */
   background:
-    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(99,102,241,0.15), transparent),
-    radial-gradient(ellipse 60% 80% at 70% 60%, rgba(168,85,247,0.12), transparent),
-    radial-gradient(ellipse 50% 50% at 50% 80%, rgba(236,72,153,0.08), transparent);
+    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(20,60,80,0.15), transparent),
+    radial-gradient(ellipse 60% 80% at 70% 60%, rgba(15,50,70,0.12), transparent),
+    radial-gradient(ellipse 50% 50% at 50% 80%, rgba(10,40,60,0.08), transparent);
   animation:aurora-shift 12s ease-in-out infinite alternate;
 }
 @keyframes aurora-shift{
   0%{filter:hue-rotate(0deg)}
-  100%{filter:hue-rotate(30deg)}
+  100%{filter:hue-rotate(15deg)}
 }
 .darkveil-container canvas{
   display:block;width:100%!important;height:100%!important;
@@ -149,7 +149,7 @@ a,button,[class*="cursor-target"]{cursor:none}
 .nav-logo-text{
   font-family:'Syne','Inter',sans-serif;
   font-weight:900;font-size:22px;letter-spacing:2px;
-  background:linear-gradient(135deg,#C9A84C,#38B2AC,#6366F1,#A855F7);
+  background:linear-gradient(135deg,#C9A84C,#38B2AC,#06B6D4,#14B8A6);
   background-size:300% 300%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
@@ -199,14 +199,14 @@ a,button,[class*="cursor-target"]{cursor:none}
     135deg,
     #C9A84C 0%,#DAA520 15%,
     #38B2AC 30%,#2DD4BF 45%,
-    #6366F1 60%,#818CF8 75%,
-    #A855F7 90%,#C084FC 100%
+    #06B6D4 60%,#22D3EE 75%,
+    #14B8A6 90%,#5EEAD4 100%
   );
   background-size:300% 300%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
   animation:gradient-move 5s ease infinite;
-  filter:drop-shadow(0 8px 32px rgba(168,85,247,0.25))
+  filter:drop-shadow(0 8px 32px rgba(20,184,166,0.25))
          drop-shadow(0 4px 16px rgba(56,178,172,0.15));
   position:relative;
 }
@@ -367,7 +367,7 @@ a,button,[class*="cursor-target"]{cursor:none}
 }
 .bento-card::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(circle 300px at var(--mx,50%) var(--my,50%),rgba(168,85,247,0.08),transparent 60%);
+  background:radial-gradient(circle 300px at var(--mx,50%) var(--my,50%),rgba(20,184,166,0.08),transparent 60%);
   opacity:0;transition:opacity .5s;pointer-events:none;border-radius:inherit;
 }
 .bento-card:hover::before{opacity:1}
@@ -405,7 +405,7 @@ a,button,[class*="cursor-target"]{cursor:none}
   border-radius:var(--radius);transition:all .3s;
 }
 .speed-card:hover{transform:translateY(-4px)}
-.speed-hero{border-color:var(--accent);background:rgba(168,85,247,0.04)}
+.speed-hero{border-color:var(--accent);background:rgba(20,184,166,0.04)}
 .speed-label{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--text-3);margin-bottom:12px}
 .speed-num{font-size:56px;font-weight:900;line-height:1}
 .speed-hero .speed-num{
@@ -428,7 +428,7 @@ a,button,[class*="cursor-target"]{cursor:none}
 .cta-glow{
   position:absolute;top:-100px;left:50%;transform:translateX(-50%);
   width:400px;height:300px;
-  background:radial-gradient(ellipse,rgba(168,85,247,0.12),transparent 70%);
+  background:radial-gradient(ellipse,rgba(20,184,166,0.12),transparent 70%);
   pointer-events:none;animation:cta-pulse 4s ease-in-out infinite;
 }
 @keyframes cta-pulse{0%,100%{opacity:0.6;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.1)}}

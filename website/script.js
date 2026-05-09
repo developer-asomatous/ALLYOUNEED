@@ -22,14 +22,14 @@ void main(){
   float f1=fbm(p+vec2(t*.7,t*.3));
   float f2=fbm(p+vec2(f1*1.5+t*.2,f1*1.2-t*.1));
   float f3=fbm(p+vec2(f2*2.+t*.1,f2*1.8+t*.15));
-  vec3 c1=vec3(.15,.05,.25);
-  vec3 c2=vec3(.08,.02,.18);
-  vec3 c3=vec3(.25,.08,.35);
-  vec3 c4=vec3(.05,.08,.20);
+  vec3 c1=vec3(.04,.04,.07);
+  vec3 c2=vec3(.02,.03,.06);
+  vec3 c3=vec3(.06,.08,.12);
+  vec3 c4=vec3(.03,.05,.08);
   vec3 col=mix(c1,c2,f1);
   col=mix(col,c3,f2*.7);
   col=mix(col,c4,f3*.5);
-  col+=vec3(.03,.01,.05)*sin(uv.x*PI*2.+t);
+  col+=vec3(.01,.02,.03)*sin(uv.x*PI*2.+t);
   float vig=1.-length((uv-.5)*1.5);
   col*=smoothstep(0.,.7,vig);
   gl_FragColor=vec4(col,1.);
@@ -99,12 +99,12 @@ void main(){
     // Config — tune these for the AYN aesthetic
     const CFG = {
       origin: 'top-center',
-      color: [0.55, 0.35, 0.95],  // Purple rays matching brand
+      color: [0.25, 0.85, 0.95],  // Cyan-teal rays for contrast against dark base
       speed: 0.8,
-      spread: 0.6,
-      rayLength: 1.8,
-      fadeDistance: 1.2,
-      saturation: 0.9,
+      spread: 0.8,
+      rayLength: 2.2,
+      fadeDistance: 1.5,
+      saturation: 0.85,
       mouseInfluence: 0.08,
       noiseAmount: 0.05,
       distortion: 0.03,
