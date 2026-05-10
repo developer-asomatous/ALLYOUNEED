@@ -7,12 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  ImageBackground,
   ActivityIndicator,
   Animated,
   Alert,
   Platform,
   KeyboardAvoidingView,
   Clipboard,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -277,18 +279,29 @@ export default function HomeScreen() {
           <UsageBanner onOpenFarm={() => setShowUsageGate(true)} />
 
           {/* ── Hero Section ── */}
-          <View style={s.hero}>
-            <Animated.View style={[s.heroGlow, { opacity: glowOpacity }]} />
-            <View style={s.heroIconWrap}>
-              <View style={s.heroIcon}>
-                <Ionicons name="arrow-down-circle" size={32} color={Colors.accent.primary} />
+          <ImageBackground
+            source={require('../../assets/images/hero-bg.png')}
+            style={s.heroBg}
+            imageStyle={s.heroBgImage}
+            resizeMode="cover"
+          >
+            <View style={s.heroBgOverlay} />
+            <View style={s.hero}>
+              <Animated.View style={[s.heroGlow, { opacity: glowOpacity }]} />
+              <View style={s.heroIconWrap}>
+                <View style={s.heroIcon}>
+                  <View style={s.heroIconInner}>
+                    <Ionicons name="arrow-down-circle" size={28} color="#fff" />
+                  </View>
+                </View>
               </View>
+              <Text style={s.heroLabel}>AYN PLAYER</Text>
+              <Text style={s.heroTitle}>Paste. Pull. Done.</Text>
+              <Text style={s.heroSub}>
+                Share any link from any app — or paste it below.{'\n'}We handle the rest.
+              </Text>
             </View>
-            <Text style={s.heroTitle}>Paste. Pull. Done.</Text>
-            <Text style={s.heroSub}>
-              Share any link from any app — or paste it below.{'\n'}We handle the rest.
-            </Text>
-          </View>
+          </ImageBackground>
 
           {/* ── URL Input Card ── */}
           <View style={s.inputCard}>
@@ -507,24 +520,46 @@ const s = StyleSheet.create({
   scrollContent: { padding: Spacing.lg, paddingBottom: 120 },
 
   // ── Hero ──
-  hero: { alignItems: 'center', paddingVertical: 28, marginBottom: 8 },
+  heroBg: {
+    marginHorizontal: -Spacing.lg, marginTop: -Spacing.lg,
+    marginBottom: 8, overflow: 'hidden',
+  },
+  heroBgImage: { borderRadius: 0 },
+  heroBgOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(9, 9, 15, 0.35)',
+  },
+  hero: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: Spacing.lg },
   heroGlow: {
-    position: 'absolute', top: -20, width: 200, height: 200, borderRadius: 100,
+    position: 'absolute', top: -30, width: 160, height: 160, borderRadius: 80,
     backgroundColor: Colors.accent.primary,
   },
-  heroIconWrap: { marginBottom: 16 },
+  heroIconWrap: { marginBottom: 18 },
   heroIcon: {
-    width: 56, height: 56, borderRadius: 18, backgroundColor: Colors.accent.glow,
+    width: 64, height: 64, borderRadius: 22,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.accent.primary + '30',
+    borderWidth: 1.5, borderColor: 'rgba(168, 85, 247, 0.4)',
+  },
+  heroIconInner: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: Colors.accent.primary,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: Colors.accent.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5, shadowRadius: 12,
+  },
+  heroLabel: {
+    fontSize: 11, fontWeight: '800', color: Colors.accent.primary,
+    letterSpacing: 3, marginBottom: 10, textTransform: 'uppercase' as const,
   },
   heroTitle: {
-    fontSize: 26, fontWeight: '900', color: Colors.text.primary,
-    letterSpacing: -0.5, marginBottom: 8,
+    fontSize: 28, fontWeight: '900', color: '#FFFFFF',
+    letterSpacing: -0.5, marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8,
   },
   heroSub: {
-    fontSize: 14, color: Colors.text.muted, textAlign: 'center',
-    lineHeight: 20, fontWeight: '500', paddingHorizontal: 20,
+    fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center' as const,
+    lineHeight: 21, fontWeight: '500', paddingHorizontal: 16,
   },
 
   // ── Input Card ──
