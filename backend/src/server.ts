@@ -7,6 +7,7 @@ import { statusRoute } from './routes/status';
 import { streamRoute } from './routes/stream';
 import { jobCleanupRoute } from './routes/cleanup';
 import { entitlementRoute } from './routes/entitlement';
+import { cookieRoute } from './routes/cookies';
 
 const server = Fastify({
   logger: true, // Simple built-in logger, no pino-pretty needed
@@ -48,6 +49,7 @@ async function start() {
   await server.register(streamRoute, { prefix: '/v1' });
   await server.register(jobCleanupRoute, { prefix: '/v1' });
   await server.register(entitlementRoute, { prefix: '/v1' });
+  await server.register(cookieRoute, { prefix: '/v1' });
 
   const port = parseInt(process.env.PORT || '3000', 10);
   const host = process.env.HOST || '0.0.0.0';

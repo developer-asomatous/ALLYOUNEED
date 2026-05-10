@@ -34,6 +34,46 @@ try {
   YTDLP_BIN = 'yt-dlp';
 }
 
+// Cookie support for YouTube bot detection bypass
+const COOKIES_PATH = '/tmp/yt-cookies.txt';
+let COOKIES_AVAILABLE = false;
+
+function initCookies() {
+  // Check for cookies env var (Netscape cookie format)
+  const cookieData = process.env.YOUTUBE_COOKIES || process.env.YT_COOKIES || '';
+  if (cookieData.trim()) {
+    try {
+      fs.writeFileSync(COOKIES_PATH, cookieData.replace(/\\n/g, '\n'));
+      COOKIES_AVAILABLE = true;
+      console.log('✅ YouTube cookies loaded from environment');
+    } catch (e) {
+      console.warn('⚠️  Failed to write cookie file:', e);
+    }
+  }
+  // Also check for a cookies file at standard locations
+  if (!COOKIES_AVAILABLE) {
+    const cookiePaths = ['/tmp/yt-cookies.txt', './cookies.txt', '/app/cookies.txt'];
+    for (const p of cookiePaths) {
+      if (fs.existsSync(p) && fs.statSync(p).size > 0) {
+        COOKIES_AVAILABLE = true;
+        console.log(`✅ YouTube cookies found at: ${p}`);
+        break;
+      }
+    }
+  }
+  if (!COOKIES_AVAILABLE) {
+    console.warn('⚠️  No YouTube cookies — YouTube may block requests from this server IP');
+  }
+}
+initCookies();
+
+function getCookieArgs(): string[] {
+  if (COOKIES_AVAILABLE && fs.existsSync(COOKIES_PATH) && fs.statSync(COOKIES_PATH).size > 0) {
+    return ['--cookies', COOKIES_PATH];
+  }
+  return [];
+}
+
 export interface MediaFormat {
   id: string;
   ext: string;
@@ -227,6 +267,7 @@ export function fetchMediaInfo(url: string): Promise<MediaInfo> {
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       '--add-header', 'Accept-Language:en-US,en;q=0.9',
       '--add-header', 'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      ...getCookieArgs(),
       url,
     ];
 
@@ -402,6 +443,7 @@ export function downloadMedia(
     args.push('--extractor-args', 'youtube:player_client=web');
     args.push('--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
     args.push('--add-header', 'Accept-Language:en-US,en;q=0.9');
+    args.push(...getCookieArgs());
 
     // ⚡ Use aria2c as external downloader for 16x speed
     const aria2cArgs = getYtdlpAria2cArgs();
