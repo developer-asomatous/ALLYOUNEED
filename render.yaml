@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ayn-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: HOST
+        value: 0.0.0.0
+      - key: STORAGE_PATH
+        value: /tmp/ayn-downloads
+    healthCheckPath: /health
