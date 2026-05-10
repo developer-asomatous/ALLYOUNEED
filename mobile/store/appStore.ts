@@ -114,9 +114,18 @@ export const useAppStore = create<AppState>()(
       downloads: [],
       addDownload: (job) => set((s) => ({ downloads: [job, ...s.downloads] })),
       updateDownload: (id, updates) =>
-        set((s) => ({
-          downloads: s.downloads.map((d) => (d.id === id ? { ...d, ...updates } : d)),
-        })),
+        set((s) => {
+          const newDownloads = s.downloads.map((d) => (d.id === id ? { ...d, ...updates } : d));
+          // Auto-remove failed downloads after update (they shouldn't count as usage)
+          if (updates.status === 'failed') {
+            setTimeout(() => {
+              set((state) => ({
+                downloads: state.downloads.filter((d) => d.id !== id),
+              }));
+            }, 5000); // Remove from list after 5s so user can see the error briefly
+          }
+          return { downloads: newDownloads };
+        }),
       removeDownload: (id) => set((s) => ({ downloads: s.downloads.filter((d) => d.id !== id) })),
       clearCompleted: () =>
         set((s) => ({ downloads: s.downloads.filter((d) => d.status !== 'done') })),

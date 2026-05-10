@@ -111,10 +111,8 @@ export function downloadWithAria2c(
       '-o', outputFilename,
 
       // Performance
-      '--max-connection-per-server', String(connections),
-      '--min-split-size', splitSize,
       '--stream-piece-selector=inorder',       // Download in order for streaming
-      '--file-allocation=falloc',              // Fast pre-allocation
+      '--file-allocation=none',                // Compatible with all filesystems
       '--auto-file-renaming=false',            // Don't rename
       '--allow-overwrite=true',
 
@@ -214,6 +212,6 @@ export function getYtdlpAria2cArgs(): string[] {
 
   return [
     '--downloader', 'aria2c',
-    '--downloader-args', `aria2c:"-x 16 -s 16 -k 1M --min-split-size=1M --max-connection-per-server=16"`,
+    '--downloader-args', 'aria2c:-x 16 -s 16 -k 1M',
   ];
 }
