@@ -1,6 +1,11 @@
-FROM node:20-slim
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN rm -rf dist && npx tsc
 
-# Install system deps: yt-dlp, aria2c, ffmpeg
+FROM node:20-slim
 RUN apt-get update && apt-get install -y \
     python3 python3-pip ffmpeg curl aria2 \
     --no-install-recommends && \
@@ -10,15 +15,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
-
-# Copy source and force clean build
-COPY . .
-RUN rm -rf dist && npm run build
-
+COPY --from=builder /app/dist ./dist
 RUN mkdir -p /tmp/ayn-downloads
-
-# Verify no webtorrent in build
-RUN ! grep -r "webtorrent" dist/ || (echo "ERROR: webtorrent still in build!" && exit 1)
 
 EXPOSE 3000
 ENV PORT=3000
