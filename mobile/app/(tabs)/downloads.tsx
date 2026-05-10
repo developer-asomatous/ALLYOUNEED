@@ -55,8 +55,8 @@ function DownloadItem({ item, onPlay }: { item: DownloadJob; onPlay: (item: Down
     // If already downloaded locally, check it exists
     if (item.localUri) {
       try {
-        const file = new FileSystem.File(item.localUri);
-        if (file.exists) return item.localUri;
+        const info = await FileSystem.getInfoAsync(item.localUri);
+        if (info.exists) return item.localUri;
       } catch {}
     }
 
@@ -66,31 +66,18 @@ function DownloadItem({ item, onPlay }: { item: DownloadJob; onPlay: (item: Down
       .substring(0, 50)
       .trim();
     const filename = `${sanitizedTitle}_${item.id}.${ext}`;
-
-    // Use the new Paths API for cache directory
-    const destFile = new FileSystem.File(FileSystem.Paths.cache, filename);
-    const localUri = destFile.uri;
+    const localUri = `${FileSystem.cacheDirectory}${filename}`;
 
     // Stream URL from backend
     const streamUrl = API_BASE_URL.replace('/v1', '') + `/v1/stream/${item.id}`;
 
     try {
-      // Download via fetch and write to file
-      const response = await fetch(streamUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1] || '');
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      destFile.write(base64);
-      updateDownload(item.id, { localUri });
-      return localUri;
+      const downloadResult = await FileSystem.downloadAsync(streamUrl, localUri);
+      if (downloadResult.status !== 200) {
+        throw new Error(`HTTP ${downloadResult.status}`);
+      }
+      updateDownload(item.id, { localUri: downloadResult.uri });
+      return downloadResult.uri;
     } catch (err: any) {
       Alert.alert('Download Error', `Could not fetch file: ${err.message}`);
       return null;
@@ -189,8 +176,7 @@ function DownloadItem({ item, onPlay }: { item: DownloadJob; onPlay: (item: Down
         onPress: async () => {
           if (item.localUri) {
             try {
-              const file = new FileSystem.File(item.localUri);
-              if (file.exists) file.delete();
+              await FileSystem.deleteAsync(item.localUri, { idempotent: true });
             } catch {}
           }
           removeDownload(item.id);
@@ -377,8 +363,8 @@ export default function DownloadsScreen() {
 
     if (item.localUri) {
       try {
-        const file = new FileSystem.File(item.localUri);
-        if (file.exists) {
+        const info = await FileSystem.getInfoAsync(item.localUri);
+        if (info.exists) {
           uri = item.localUri;
         }
       } catch {}

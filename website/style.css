@@ -410,7 +410,7 @@ a,button,[class*="cursor-target"]{cursor:none}
 .speed-num{font-size:56px;font-weight:900;line-height:1}
 .speed-hero .speed-num{
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .speed-unit{font-size:14px;color:var(--text-3);margin-top:4px}
 .speed-detail{font-size:12px;color:var(--text-3);margin-top:8px}
@@ -436,7 +436,7 @@ a,button,[class*="cursor-target"]{cursor:none}
 .cta-box h2 em{
   font-style:normal;
   background:linear-gradient(135deg,var(--accent),var(--accent-pink));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .cta-box p{color:var(--text-2);margin-bottom:28px;position:relative}
 .cta-meta{

@@ -208,26 +208,19 @@ export default function HomeScreen() {
                 .trim();
               const filename = `${sanitizedTitle}_${jobId}.${ext}`;
               const streamUrl = API_BASE_URL.replace('/v1', '') + `/v1/stream/${jobId}`;
+              const localUri = `${FileSystem.cacheDirectory}${filename}`;
 
-              // Create destination file in cache
-              const destFile = new FileSystem.File(FileSystem.Paths.cache, filename);
+              const downloadResult = await FileSystem.downloadAsync(streamUrl, localUri);
 
-              // Download file from backend to local cache using static method
-              const downloadedFile = await FileSystem.File.downloadFileAsync(
-                streamUrl,
-                destFile,
-                { idempotent: true }
-              );
-
-              if (downloadedFile.exists) {
-                updateDownload(jobId, { localUri: downloadedFile.uri });
+              if (downloadResult.status === 200) {
+                updateDownload(jobId, { localUri: downloadResult.uri });
 
                 // Auto-save media files to gallery
                 const mediaExts = ['mp4', 'mkv', 'webm', 'mov', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
                 if (mediaExts.includes(ext)) {
                   const { status: permStatus } = await MediaLibrary.requestPermissionsAsync();
                   if (permStatus === 'granted') {
-                    await MediaLibrary.saveToLibraryAsync(downloadedFile.uri);
+                    await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
                     console.log(`[AYN] Saved to gallery: ${filename}`);
                   }
                 }
@@ -280,7 +273,7 @@ export default function HomeScreen() {
 
           {/* ── Hero Section ── */}
           <ImageBackground
-            source={require('../../assets/images/hero-bg.png')}
+            source={require('../../assets/images/hero-bg.jpg')}
             style={s.heroBg}
             imageStyle={s.heroBgImage}
             resizeMode="cover"

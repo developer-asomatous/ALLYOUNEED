@@ -20,19 +20,8 @@ import { formatDuration } from '../utils/helpers';
 
 /**
  * ═══════════════════════════════════════════════════
- *  AYN Netflix-Style Video Player
+ *  AYN Cinema-Grade Video Player
  * ═══════════════════════════════════════════════════
- *
- *  Features:
- *  • Full-screen immersive playback
- *  • Auto-hiding controls (3s timeout)
- *  • Double-tap to skip ±10s (like Netflix/YouTube)
- *  • Swipe-based seek on progress bar
- *  • Loading/buffering indicator
- *  • Brightness/volume gesture zones
- *  • Portrait + landscape support
- *  • Playback speed control (0.5x–2x)
- *  • Resume from last position
  */
 
 interface VideoPlayerProps {
@@ -41,15 +30,13 @@ interface VideoPlayerProps {
   title: string;
   thumbnail?: string;
   onClose: () => void;
-  initialPosition?: number; // Resume position in ms
+  initialPosition?: number;
   onPositionUpdate?: (positionMs: number) => void;
 }
 
 const SKIP_SECONDS = 10;
 const CONTROLS_HIDE_DELAY = 3500;
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function VideoPlayer({
   visible,
@@ -62,34 +49,28 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<Video>(null);
 
-  // ── Playback state ──
   const [isPlaying, setIsPlaying] = useState(true);
   const [isBuffering, setIsBuffering] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [position, setPosition] = useState(0); // ms
-  const [duration, setDuration] = useState(0); // ms
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
-  // ── Controls visibility ──
   const [showControls, setShowControls] = useState(true);
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Double-tap skip ──
   const [skipIndicator, setSkipIndicator] = useState<'left' | 'right' | null>(null);
   const skipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTapTime = useRef(0);
   const lastTapSide = useRef<'left' | 'right' | null>(null);
 
-  // ── Seeking ──
   const [isSeeking, setIsSeeking] = useState(false);
   const seekPosition = useRef(0);
 
-  // Progress animation
   const progress = duration > 0 ? position / duration : 0;
 
-  // ── Auto-hide controls ──
   const scheduleHide = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
@@ -118,33 +99,18 @@ export default function VideoPlayer({
   }, [showControls, scheduleHide]);
 
   useEffect(() => {
-    if (showControls && isPlaying) {
-      scheduleHide();
-    }
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
+    if (showControls && isPlaying) scheduleHide();
+    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [showControls, isPlaying, scheduleHide]);
 
-  // ── Playback status handler ──
   const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      setIsBuffering(true);
-      return;
-    }
-
+    if (!status.isLoaded) { setIsBuffering(true); return; }
     setIsLoaded(true);
     setIsBuffering(status.isBuffering);
     setIsPlaying(status.isPlaying);
     setPosition(status.positionMillis || 0);
     setDuration(status.durationMillis || 0);
-
-    // Report position for resume support
-    if (onPositionUpdate && status.positionMillis) {
-      onPositionUpdate(status.positionMillis);
-    }
-
-    // Video finished
+    if (onPositionUpdate && status.positionMillis) onPositionUpdate(status.positionMillis);
     if (status.didJustFinish) {
       setIsPlaying(false);
       setShowControls(true);
@@ -152,14 +118,10 @@ export default function VideoPlayer({
     }
   }, [onPositionUpdate]);
 
-  // ── Controls ──
   const handlePlayPause = useCallback(async () => {
     if (!videoRef.current) return;
-    if (isPlaying) {
-      await videoRef.current.pauseAsync();
-    } else {
-      await videoRef.current.playAsync();
-    }
+    if (isPlaying) await videoRef.current.pauseAsync();
+    else await videoRef.current.playAsync();
   }, [isPlaying]);
 
   const handleSkip = useCallback(async (seconds: number) => {
@@ -182,67 +144,47 @@ export default function VideoPlayer({
     setShowSpeedMenu(false);
   }, []);
 
-  // ── Double-tap detection ──
   const handleScreenTap = useCallback((event: any) => {
     const tapX = event.nativeEvent.locationX;
     const screenWidth = Dimensions.get('window').width;
     const now = Date.now();
     const side = tapX < screenWidth / 2 ? 'left' : 'right';
-
-    // Double-tap detection (within 300ms, same side)
     if (now - lastTapTime.current < 300 && lastTapSide.current === side) {
-      // Double-tap → skip
       const skipSec = side === 'left' ? -SKIP_SECONDS : SKIP_SECONDS;
       handleSkip(skipSec);
-
       setSkipIndicator(side);
       if (skipTimer.current) clearTimeout(skipTimer.current);
       skipTimer.current = setTimeout(() => setSkipIndicator(null), 800);
-
       lastTapTime.current = 0;
       lastTapSide.current = null;
     } else {
-      // First tap — wait for potential double-tap
       lastTapTime.current = now;
       lastTapSide.current = side;
-
-      // If no second tap within 300ms, toggle controls
       setTimeout(() => {
-        if (Date.now() - lastTapTime.current >= 280) {
-          toggleControls();
-        }
+        if (Date.now() - lastTapTime.current >= 280) toggleControls();
       }, 300);
     }
   }, [handleSkip, toggleControls]);
 
-  // ── Progress bar pan gesture ──
   const progressPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        setIsSeeking(true);
-      },
+      onPanResponderGrant: () => setIsSeeking(true),
       onPanResponderMove: (_, gestureState) => {
-        const containerWidth = Dimensions.get('window').width - 48; // padding
+        const containerWidth = Dimensions.get('window').width - 48;
         const fraction = Math.max(0, Math.min(1, gestureState.moveX / containerWidth));
         seekPosition.current = fraction;
         setPosition(fraction * duration);
       },
-      onPanResponderRelease: () => {
-        handleSeek(seekPosition.current);
-      },
+      onPanResponderRelease: () => handleSeek(seekPosition.current),
     }),
   ).current;
 
-  // ── Close handler ──
   const handleClose = useCallback(async () => {
-    if (videoRef.current) {
-      try { await videoRef.current.pauseAsync(); } catch {}
-    }
+    if (videoRef.current) { try { await videoRef.current.pauseAsync(); } catch {} }
     onClose();
   }, [onClose]);
 
-  // ── Load with initial position ──
   useEffect(() => {
     if (visible && videoRef.current && initialPosition > 0) {
       videoRef.current.setPositionAsync(initialPosition).catch(() => {});
@@ -252,15 +194,9 @@ export default function VideoPlayer({
   if (!visible) return null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      supportedOrientations={['portrait', 'landscape']}
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} animationType="fade" supportedOrientations={['portrait', 'landscape']} onRequestClose={handleClose}>
       <StatusBar hidden />
       <View style={styles.container}>
-        {/* ── Video ── */}
         <Video
           ref={videoRef}
           source={{ uri }}
@@ -273,146 +209,120 @@ export default function VideoPlayer({
           usePoster={!!thumbnail}
         />
 
-        {/* ── Tap Handler Layer ── */}
+        {/* Tap Layer */}
         <TouchableWithoutFeedback onPress={handleScreenTap}>
           <View style={styles.touchLayer}>
-            {/* Skip Indicators */}
             {skipIndicator === 'left' && (
               <View style={[styles.skipIndicator, styles.skipLeft]}>
-                <Ionicons name="play-back" size={32} color="#fff" />
-                <Text style={styles.skipText}>{SKIP_SECONDS}s</Text>
+                <View style={styles.skipRipple}>
+                  <Ionicons name="play-back" size={28} color="#fff" />
+                  <Text style={styles.skipText}>{SKIP_SECONDS}s</Text>
+                </View>
               </View>
             )}
             {skipIndicator === 'right' && (
               <View style={[styles.skipIndicator, styles.skipRight]}>
-                <Ionicons name="play-forward" size={32} color="#fff" />
-                <Text style={styles.skipText}>{SKIP_SECONDS}s</Text>
+                <View style={styles.skipRipple}>
+                  <Ionicons name="play-forward" size={28} color="#fff" />
+                  <Text style={styles.skipText}>{SKIP_SECONDS}s</Text>
+                </View>
               </View>
             )}
           </View>
         </TouchableWithoutFeedback>
 
-        {/* ── Buffering Indicator ── */}
+        {/* Buffering */}
         {isBuffering && isLoaded && (
           <View style={styles.bufferingOverlay}>
-            <ActivityIndicator size="large" color={Colors.accent.primary} />
+            <View style={styles.bufferingRing}>
+              <ActivityIndicator size="large" color={Colors.accent.primary} />
+            </View>
           </View>
         )}
 
-        {/* ── Loading Indicator (initial) ── */}
+        {/* Initial Loading */}
         {!isLoaded && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={Colors.accent.primary} />
-            <Text style={styles.loadingText}>Loading video...</Text>
+            <View style={styles.loadingPulse}>
+              <Ionicons name="play" size={36} color={Colors.accent.primary} />
+            </View>
+            <Text style={styles.loadingText}>Loading...</Text>
           </View>
         )}
 
-        {/* ── Controls Overlay ── */}
+        {/* Controls */}
         {showControls && (
           <Animated.View style={[styles.controlsOverlay, { opacity: controlsOpacity }]}>
-            {/* ── Top Bar ── */}
+            {/* Gradient overlays */}
+            <View style={styles.topGradient} />
+            <View style={styles.bottomGradient} />
+
+            {/* Top Bar */}
             <View style={styles.topBar}>
               <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-                <Ionicons name="chevron-down" size={28} color="#fff" />
+                <Ionicons name="chevron-down" size={24} color="#fff" />
               </TouchableOpacity>
               <View style={styles.titleWrap}>
-                <Text style={styles.titleText} numberOfLines={1}>
-                  {title}
-                </Text>
+                <Text style={styles.nowPlaying}>NOW PLAYING</Text>
+                <Text style={styles.titleText} numberOfLines={1}>{title}</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => setShowSpeedMenu(!showSpeedMenu)}
-                style={styles.speedBtn}
-              >
+              <TouchableOpacity onPress={() => setShowSpeedMenu(!showSpeedMenu)} style={styles.speedBtn}>
                 <Text style={styles.speedBtnText}>{playbackSpeed}x</Text>
               </TouchableOpacity>
             </View>
 
-            {/* ── Speed Menu ── */}
+            {/* Speed Menu */}
             {showSpeedMenu && (
               <View style={styles.speedMenu}>
+                <Text style={styles.speedMenuTitle}>Playback Speed</Text>
                 {PLAYBACK_SPEEDS.map((speed) => (
                   <TouchableOpacity
                     key={speed}
-                    style={[
-                      styles.speedOption,
-                      playbackSpeed === speed && styles.speedOptionActive,
-                    ]}
+                    style={[styles.speedOption, playbackSpeed === speed && styles.speedOptionActive]}
                     onPress={() => handleSpeedChange(speed)}
                   >
-                    <Text
-                      style={[
-                        styles.speedOptionText,
-                        playbackSpeed === speed && styles.speedOptionTextActive,
-                      ]}
-                    >
+                    <Text style={[styles.speedOptionText, playbackSpeed === speed && styles.speedOptionTextActive]}>
                       {speed}x
                     </Text>
+                    {playbackSpeed === speed && <Ionicons name="checkmark" size={16} color={Colors.accent.primary} />}
                   </TouchableOpacity>
                 ))}
               </View>
             )}
 
-            {/* ── Center Controls ── */}
+            {/* Center Controls */}
             <View style={styles.centerControls}>
-              <TouchableOpacity
-                onPress={() => handleSkip(-SKIP_SECONDS)}
-                style={styles.skipBtn}
-              >
-                <Ionicons name="play-back" size={28} color="#fff" />
+              <TouchableOpacity onPress={() => handleSkip(-SKIP_SECONDS)} style={styles.skipBtn}>
+                <Ionicons name="play-back" size={26} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.skipBtnLabel}>{SKIP_SECONDS}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={handlePlayPause}
-                style={styles.playPauseBtn}
-              >
-                <Ionicons
-                  name={isPlaying ? 'pause' : 'play'}
-                  size={40}
-                  color="#fff"
-                />
+              <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseBtn}>
+                <View style={styles.playPauseInner}>
+                  <Ionicons name={isPlaying ? 'pause' : 'play'} size={36} color="#fff" />
+                </View>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => handleSkip(SKIP_SECONDS)}
-                style={styles.skipBtn}
-              >
-                <Ionicons name="play-forward" size={28} color="#fff" />
+              <TouchableOpacity onPress={() => handleSkip(SKIP_SECONDS)} style={styles.skipBtn}>
+                <Ionicons name="play-forward" size={26} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.skipBtnLabel}>{SKIP_SECONDS}</Text>
               </TouchableOpacity>
             </View>
 
-            {/* ── Bottom Bar ── */}
+            {/* Bottom Bar */}
             <View style={styles.bottomBar}>
-              {/* Time */}
-              <Text style={styles.timeText}>
-                {formatDuration(Math.floor(position / 1000))}
-              </Text>
-
-              {/* Progress Bar */}
               <View style={styles.progressContainer} {...progressPanResponder.panHandlers}>
                 <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progress * 100}%` },
-                    ]}
-                  />
-                  {/* Seek thumb */}
-                  <View
-                    style={[
-                      styles.seekThumb,
-                      { left: `${progress * 100}%` },
-                    ]}
-                  />
+                  <View style={[styles.progressBuffer, { width: `${Math.min(progress * 100 + 10, 100)}%` }]} />
+                  <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                  <View style={[styles.seekThumb, { left: `${progress * 100}%` }]} />
                 </View>
               </View>
-
-              {/* Duration */}
-              <Text style={styles.timeText}>
-                {formatDuration(Math.floor(duration / 1000))}
-              </Text>
+              <View style={styles.timeRow}>
+                <Text style={styles.timeText}>{formatDuration(Math.floor(position / 1000))}</Text>
+                <Text style={styles.timeSep}>  /  </Text>
+                <Text style={styles.timeTextDim}>{formatDuration(Math.floor(duration / 1000))}</Text>
+              </View>
             </View>
           </Animated.View>
         )}
@@ -422,228 +332,138 @@ export default function VideoPlayer({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  video: {
-    ...StyleSheet.absoluteFillObject,
-  },
-
-  // Touch layer
-  touchLayer: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    zIndex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  video: { ...StyleSheet.absoluteFillObject },
+  touchLayer: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 1 },
 
   // Skip indicators
-  skipIndicator: {
-    position: 'absolute',
-    top: '35%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  skipLeft: {
-    left: '15%',
-  },
-  skipRight: {
-    right: '15%',
-  },
-  skipText: {
-    color: '#fff',
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+  skipIndicator: { position: 'absolute', top: '30%', bottom: '30%', justifyContent: 'center', alignItems: 'center', width: 120 },
+  skipLeft: { left: 0, borderTopRightRadius: 120, borderBottomRightRadius: 120, backgroundColor: 'rgba(255,255,255,0.08)' },
+  skipRight: { right: 0, borderTopLeftRadius: 120, borderBottomLeftRadius: 120, backgroundColor: 'rgba(255,255,255,0.08)' },
+  skipRipple: { alignItems: 'center', justifyContent: 'center' },
+  skipText: { color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 4 },
 
   // Buffering
-  bufferingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
+  bufferingOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  bufferingRing: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
   },
 
   // Loading
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000',
-    zIndex: 3,
+  loadingOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', zIndex: 3 },
+  loadingPulse: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    borderWidth: 2, borderColor: 'rgba(168, 85, 247, 0.3)',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  loadingText: {
-    color: Colors.text.muted,
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    marginTop: 12,
-  },
+  loadingText: { color: Colors.text.muted, fontSize: FontSize.sm, fontWeight: '600' },
 
-  // Controls overlay
-  controlsOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'space-between',
-    zIndex: 5,
+  // Controls
+  controlsOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'space-between', zIndex: 5 },
+  topGradient: {
+    position: 'absolute', top: 0, left: 0, right: 0, height: 140,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  bottomGradient: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 160,
+    backgroundColor: 'rgba(0,0,0,0.75)',
   },
 
   // Top bar
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingHorizontal: 16,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 54 : 24,
+    paddingHorizontal: 20, gap: 14, zIndex: 10,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  titleWrap: {
-    flex: 1,
+  titleWrap: { flex: 1 },
+  nowPlaying: {
+    fontSize: 9, fontWeight: '800', color: Colors.accent.primary,
+    letterSpacing: 2, marginBottom: 3, textTransform: 'uppercase' as const,
   },
-  titleText: {
-    color: '#fff',
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
+  titleText: { color: '#fff', fontSize: FontSize.md, fontWeight: '700' },
   speedBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
-  speedBtnText: {
-    color: '#fff',
-    fontSize: FontSize.sm,
-    fontWeight: '800',
-  },
+  speedBtnText: { color: '#fff', fontSize: FontSize.sm, fontWeight: '800' },
 
   // Speed menu
   speedMenu: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 90 : 60,
-    right: 16,
-    backgroundColor: 'rgba(20,20,30,0.95)',
-    borderRadius: BorderRadius.md,
-    padding: 8,
-    zIndex: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    position: 'absolute', top: Platform.OS === 'ios' ? 100 : 70, right: 20,
+    backgroundColor: 'rgba(15,15,25,0.97)', borderRadius: 16, padding: 12,
+    zIndex: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    minWidth: 160,
+  },
+  speedMenuTitle: {
+    fontSize: 10, fontWeight: '800', color: Colors.text.muted,
+    letterSpacing: 1.5, textTransform: 'uppercase' as const,
+    marginBottom: 8, paddingHorizontal: 8,
   },
   speedOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10,
   },
-  speedOptionActive: {
-    backgroundColor: Colors.accent.primary + '30',
-  },
-  speedOptionText: {
-    color: Colors.text.secondary,
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  speedOptionTextActive: {
-    color: Colors.accent.primary,
-    fontWeight: '800',
-  },
+  speedOptionActive: { backgroundColor: Colors.accent.primary + '18' },
+  speedOptionText: { color: Colors.text.secondary, fontSize: FontSize.md, fontWeight: '600' },
+  speedOptionTextActive: { color: Colors.accent.primary, fontWeight: '800' },
 
-  // Center controls
-  centerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 48,
-  },
+  // Center
+  centerControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 52, zIndex: 10 },
   playPauseBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(168, 85, 247, 0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    borderWidth: 2, borderColor: 'rgba(168, 85, 247, 0.4)',
+  },
+  playPauseInner: {
+    width: 62, height: 62, borderRadius: 31,
+    backgroundColor: Colors.accent.primary,
+    alignItems: 'center', justifyContent: 'center',
     shadowColor: Colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 24, elevation: 15,
   },
   skipBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
   },
-  skipBtnLabel: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-    marginTop: 1,
-  },
+  skipBtnLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 8, fontWeight: '800', marginTop: 1 },
 
   // Bottom bar
   bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    gap: 10,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    zIndex: 10,
   },
-  timeText: {
-    color: '#fff',
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    minWidth: 42,
-    textAlign: 'center',
-  },
-
-  // Progress bar
-  progressContainer: {
-    flex: 1,
-    height: 32, // Large touch target
-    justifyContent: 'center',
-  },
+  progressContainer: { height: 36, justifyContent: 'center', marginBottom: 4 },
   progressTrack: {
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 2,
-    overflow: 'visible',
-    position: 'relative',
+    height: 3, backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 2, overflow: 'visible', position: 'relative',
+  },
+  progressBuffer: {
+    position: 'absolute', height: '100%', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2,
   },
   progressFill: {
-    height: '100%',
+    height: '100%', borderRadius: 2,
     backgroundColor: Colors.accent.primary,
-    borderRadius: 2,
   },
   seekThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Colors.accent.primary,
-    marginLeft: -8,
+    position: 'absolute', top: -7, width: 17, height: 17, borderRadius: 9,
+    backgroundColor: '#fff', marginLeft: -8.5,
+    borderWidth: 3, borderColor: Colors.accent.primary,
     shadowColor: Colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 10, elevation: 5,
   },
+  timeRow: { flexDirection: 'row', alignItems: 'center' },
+  timeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  timeSep: { color: 'rgba(255,255,255,0.3)', fontSize: 12 },
+  timeTextDim: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600' },
 });

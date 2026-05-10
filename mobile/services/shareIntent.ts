@@ -149,15 +149,16 @@ export function useShareIntentHandler() {
                   .trim();
                 const fname = `${safeName}_${jobId}.${ext}`;
                 const sUrl = API_BASE_URL.replace('/v1', '') + `/v1/stream/${jobId}`;
-                const dest = new FileSystem.File(FileSystem.Paths.cache, fname);
-                const saved = await FileSystem.File.downloadFileAsync(sUrl, dest, { idempotent: true });
-                if (saved.exists) {
-                  updateDownload(jobId, { localUri: saved.uri });
+                const localUri = `${FileSystem.cacheDirectory}${fname}`;
+
+                const downloadResult = await FileSystem.downloadAsync(sUrl, localUri);
+                if (downloadResult.status === 200) {
+                  updateDownload(jobId, { localUri: downloadResult.uri });
                   const mediaExts = ['mp4', 'mkv', 'webm', 'mov', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
                   if (mediaExts.includes(ext)) {
                     const { status: ps } = await MediaLibrary.requestPermissionsAsync();
                     if (ps === 'granted') {
-                      await MediaLibrary.saveToLibraryAsync(saved.uri);
+                      await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
                       console.log(`[AYN-Share] Saved to gallery: ${fname}`);
                     }
                   }
