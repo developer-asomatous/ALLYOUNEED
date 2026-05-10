@@ -68,7 +68,8 @@ function initCookies() {
 initCookies();
 
 function getCookieArgs(): string[] {
-  if (COOKIES_AVAILABLE && fs.existsSync(COOKIES_PATH) && fs.statSync(COOKIES_PATH).size > 0) {
+  // Always check dynamically — cookies may be uploaded at runtime via API
+  if (fs.existsSync(COOKIES_PATH) && fs.statSync(COOKIES_PATH).size > 10) {
     return ['--cookies', COOKIES_PATH];
   }
   return [];
