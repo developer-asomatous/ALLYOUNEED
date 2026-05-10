@@ -44,6 +44,7 @@ export interface MediaFormat {
   acodec?: string;
   abr?: number;
   type: 'video' | 'audio' | 'image';
+  directUrl?: string; // CDN download URL for direct client-side download
 }
 
 export interface MediaInfo {
@@ -512,6 +513,7 @@ function parseFormats(rawFormats: any[]): MediaFormat[] {
       acodec: f.acodec !== 'none' ? f.acodec : undefined,
       abr: f.abr || undefined,
       type,
+      directUrl: f.url || undefined, // CDN URL for direct download
     });
   }
 
