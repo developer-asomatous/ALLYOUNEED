@@ -115,9 +115,7 @@ export const Shadows = {
 };
 
 // API Configuration
-export const API_BASE_URL = __DEV__
-  ? 'http://192.168.0.4:3000/v1'
-  : 'https://allyouneed-ia1i.onrender.com/v1';
+export const API_BASE_URL = 'https://allyouneed-ia1i.onrender.com/v1';
 
 export const PLATFORM_ICONS: Record<string, { icon: string; color: string }> = {
   youtube: { icon: 'logo-youtube', color: Colors.platform.youtube },

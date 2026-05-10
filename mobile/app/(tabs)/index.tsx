@@ -16,6 +16,7 @@ import {
   Clipboard,
   Dimensions,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore, MediaFormat } from '../../store/appStore';
@@ -87,11 +88,14 @@ export default function HomeScreen() {
       if (text && isValidUrl(text.trim())) {
         setInputUrl(text.trim());
         setErrorMsg('');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         setErrorMsg('No valid URL found in clipboard');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
     } catch {
       setErrorMsg('Could not read clipboard');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, []);
 
@@ -100,10 +104,12 @@ export default function HomeScreen() {
     if (!inputUrl.trim()) return;
     if (!isValidUrl(inputUrl.trim())) {
       setErrorMsg('Please enter a valid URL');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
     if (!isConnected) {
       setErrorMsg('No internet connection');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
@@ -127,6 +133,7 @@ export default function HomeScreen() {
         : err.isNetworkError ? 'Network error — check connection'
         : err.message || 'Failed to fetch media info';
       setErrorMsg(msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setFetchingInfo(false);
       isFetchingRef.current = false;
@@ -175,8 +182,10 @@ export default function HomeScreen() {
       });
       pollJobStatus(jobId);
       resetMediaState();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Download Started', `"${mediaInfo.title}" is downloading. Check the Library tab.`);
     } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Download Failed', err.message || 'Could not start download');
     }
   }, [mediaInfo, selectedFormat, mediaType, canDownload, isConnected]);
@@ -333,7 +342,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[s.fetchBtn, (!inputUrl.trim() || isFetchingInfo) && s.fetchBtnOff]}
-              onPress={handleFetch}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleFetch(); }}
               disabled={!inputUrl.trim() || isFetchingInfo}
               activeOpacity={0.8}
             >
@@ -520,7 +529,7 @@ const s = StyleSheet.create({
   heroBgImage: { borderRadius: 0 },
   heroBgOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(9, 9, 15, 0.35)',
+    backgroundColor: 'rgba(9, 9, 15, 0.55)',
   },
   hero: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: Spacing.lg },
   heroGlow: {
@@ -542,17 +551,17 @@ const s = StyleSheet.create({
     shadowOpacity: 0.5, shadowRadius: 12,
   },
   heroLabel: {
-    fontSize: 11, fontWeight: '800', color: Colors.accent.primary,
-    letterSpacing: 3, marginBottom: 10, textTransform: 'uppercase' as const,
+    fontSize: 10, fontWeight: '800', color: Colors.accent.primary,
+    letterSpacing: 4, marginBottom: 12, textTransform: 'uppercase' as const,
   },
   heroTitle: {
-    fontSize: 28, fontWeight: '900', color: '#FFFFFF',
-    letterSpacing: -0.5, marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8,
+    fontSize: 32, fontWeight: '900', color: '#FFFFFF',
+    letterSpacing: -1, marginBottom: 12, textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12,
   },
   heroSub: {
-    fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center' as const,
-    lineHeight: 21, fontWeight: '500', paddingHorizontal: 16,
+    fontSize: 13, color: 'rgba(255,255,255,0.6)', textAlign: 'center' as const,
+    lineHeight: 20, fontWeight: '500', paddingHorizontal: 20,
   },
 
   // ── Input Card ──
@@ -572,8 +581,12 @@ const s = StyleSheet.create({
     borderRadius: BorderRadius.sm, borderWidth: 1, borderColor: Colors.accent.primary + '30',
   },
   pasteBtnText: { fontSize: 11, fontWeight: '700', color: Colors.accent.primary },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 4 },
-  errorText: { color: Colors.accent.error, fontSize: 10, fontWeight: '600' },
+  errorRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingHorizontal: 12,
+    paddingVertical: 8, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: BorderRadius.sm,
+    borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  errorText: { color: '#EF4444', fontSize: 12, fontWeight: '600', flex: 1 },
   fetchBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.accent.primary, borderRadius: BorderRadius.md,

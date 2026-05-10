@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
   loadingText: { color: Colors.text.muted, fontSize: FontSize.sm, fontWeight: '600' },
 
   // Controls
-  controlsOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'space-between', zIndex: 5 },
+  controlsOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'space-between', zIndex: 5, backgroundColor: 'rgba(0,0,0,0.4)' },
   topGradient: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 140,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    position: 'absolute', top: 0, left: 0, right: 0, height: 100,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   bottomGradient: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 160,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
 
   // Top bar
@@ -418,16 +418,13 @@ const styles = StyleSheet.create({
   // Center
   centerControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 52, zIndex: 10 },
   playPauseBtn: {
-    width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(168, 85, 247, 0.2)',
-    borderWidth: 2, borderColor: 'rgba(168, 85, 247, 0.4)',
+    width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   playPauseInner: {
-    width: 62, height: 62, borderRadius: 31,
-    backgroundColor: Colors.accent.primary,
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: Colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 24, elevation: 15,
   },
   skipBtn: {
     alignItems: 'center', justifyContent: 'center',

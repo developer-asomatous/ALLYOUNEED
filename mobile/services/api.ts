@@ -80,6 +80,29 @@ class LRUCache<T> {
 
 const mediaInfoCache = new LRUCache<MediaInfo>(CACHE_MAX_SIZE, CACHE_TTL_MS);
 
+// ── Backend warmup (wake Render from cold sleep) ──
+let backendWarm = false;
+
+export async function warmupBackend(): Promise<void> {
+  if (backendWarm) return;
+  try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 10000);
+    await fetch(`${API_BASE_URL}/info`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'warmup' }),
+      signal: controller.signal,
+    }).catch(() => {}); // We don't care about the response
+    backendWarm = true;
+  } catch {
+    // Warmup is best-effort
+  }
+}
+
+// Auto-warmup on import (fire and forget)
+warmupBackend();
+
 // ── Core fetch with timeout + retry ──
 async function resilientFetch(
   url: string,
@@ -166,8 +189,9 @@ export async function fetchInfo(url: string): Promise<MediaInfo> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
-    timeoutMs: 60000, // Render free tier cold start can take 30-50s
+    timeoutMs: 90000, // Render free tier cold start can take 30-60s + yt-dlp 5-10s
     maxRetries: 2,
+    retryDelayMs: 2000,
   });
 
   const info: MediaInfo = await res.json();

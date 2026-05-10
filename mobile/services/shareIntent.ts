@@ -204,12 +204,14 @@ export function useShareIntentHandler() {
             }
           },
           (error: any) => {
-            // Silently ignore — NullPointerException on cold start is expected
+            // Silently ignore — NullPointerException on cold start / hot reload is expected
+            if (__DEV__) console.log('[ShareIntent] getReceivedFiles error (safe to ignore):', error?.message);
           },
           'com.ayn.allyouneed' // Your app's package name
         );
       } catch (e) {
         // ReceiveSharingIntent may throw on cold start with no intent
+        if (__DEV__) console.log('[ShareIntent] Init error (safe to ignore)');
       }
 
       return () => {
