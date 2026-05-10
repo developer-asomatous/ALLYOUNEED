@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
   loadingOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', zIndex: 3 },
   loadingPulse: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(168, 85, 247, 0.15)',
-    borderWidth: 2, borderColor: 'rgba(168, 85, 247, 0.3)',
+    backgroundColor: Colors.accent.primary + '18',
+    borderWidth: 2, borderColor: Colors.accent.primary + '30',
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   loadingText: { color: Colors.text.muted, fontSize: FontSize.sm, fontWeight: '600' },

@@ -1,50 +1,55 @@
-// ALLYOUNEED (AYN) - Design Constants v2
-// Premium dark theme with glassmorphism & dock-style navigation
+// ALLYOUNEED (AYN) - Design System v3
+// Premium dark theme — Cyan/Teal + Warm Coral accents
+// Inspired by modern fintech/music apps (Spotify × Revolut)
 
 export const Colors = {
-  // Core palette — deeper, richer darks
+  // Core backgrounds — deep navy/charcoal
   bg: {
-    primary: '#09090F',
-    secondary: '#111118',
-    tertiary: '#19192A',
-    card: '#13131F',
-    elevated: '#1C1C30',
-    glass: 'rgba(18, 18, 28, 0.85)',
-    overlay: 'rgba(0, 0, 0, 0.6)',
+    primary: '#060B14',
+    secondary: '#0C1220',
+    tertiary: '#111B2E',
+    card: '#0F1724',
+    elevated: '#162034',
+    glass: 'rgba(12, 18, 32, 0.88)',
+    overlay: 'rgba(0, 0, 0, 0.65)',
+    input: '#0A1018',
   },
-  // Accent colors — vibrant purple/indigo gradient system
+  // Accent colors — electric teal + warm coral
   accent: {
-    primary: '#A855F7',     // Purple
-    secondary: '#7C3AED',   // Deep violet
-    gradient1: '#A855F7',
-    gradient2: '#6366F1',
-    gradient3: '#EC4899',   // Pink
-    glow: 'rgba(168, 85, 247, 0.15)',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    primary: '#00D4FF',      // Electric cyan
+    secondary: '#0EA5E9',    // Sky blue
+    tertiary: '#06B6D4',     // Teal
+    warm: '#FF6B6B',         // Coral
+    warmLight: '#FFA07A',    // Light salmon
+    gradient1: '#00D4FF',
+    gradient2: '#0EA5E9',
+    gradient3: '#06B6D4',
+    glow: 'rgba(0, 212, 255, 0.12)',
+    success: '#22C55E',
+    warning: '#FBBF24',
+    error: '#F43F5E',
+    info: '#38BDF8',
   },
   // Text colors
   text: {
-    primary: '#F1F5F9',
-    secondary: '#94A3B8',
-    muted: '#64748B',
-    inverse: '#09090F',
-    accent: '#C084FC',
+    primary: '#F0F6FC',
+    secondary: '#8B9FC5',
+    muted: '#4B6188',
+    inverse: '#060B14',
+    accent: '#67E8F9',
   },
   // Border colors
   border: {
-    default: '#1E293B',
-    focus: '#A855F7',
-    subtle: '#161625',
-    glass: 'rgba(255, 255, 255, 0.06)',
+    default: '#1A2744',
+    focus: '#00D4FF',
+    subtle: '#0F1C30',
+    glass: 'rgba(255, 255, 255, 0.05)',
   },
   // Platform badges
   platform: {
-    youtube: '#FF0000',
-    instagram: '#E4405F',
-    tiktok: '#000000',
+    youtube: '#FF0033',
+    instagram: '#E1306C',
+    tiktok: '#00F2EA',
     twitter: '#1DA1F2',
     facebook: '#1877F2',
     reddit: '#FF4500',
@@ -55,8 +60,8 @@ export const Colors = {
     flickr: '#0063DC',
     imgur: '#1BB76E',
     unsplash: '#111111',
-    torrent: '#9333EA',
-    other: '#6366F1',
+    torrent: '#06B6D4',
+    other: '#38BDF8',
   },
 };
 
@@ -73,7 +78,7 @@ export const BorderRadius = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
+  xl: 20,
   xxl: 28,
   full: 9999,
 };
@@ -89,28 +94,68 @@ export const FontSize = {
   display: 48,
 };
 
+// Typography weights as constants
+export const FontWeight = {
+  regular: '400' as const,
+  medium: '500' as const,
+  semibold: '600' as const,
+  bold: '700' as const,
+  extrabold: '800' as const,
+  black: '900' as const,
+};
+
 // Shadows for glassmorphism
 export const Shadows = {
   card: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
     elevation: 8,
   },
   dock: {
-    shadowColor: '#A855F7',
+    shadowColor: '#00D4FF',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
     elevation: 20,
   },
   glow: {
-    shadowColor: '#A855F7',
+    shadowColor: '#00D4FF',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
     elevation: 10,
+  },
+  warmGlow: {
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+};
+
+// Motion / animation presets
+export const Motion = {
+  duration: {
+    instant: 100,
+    fast: 200,
+    normal: 350,
+    slow: 500,
+    glacial: 800,
+  },
+  spring: {
+    snappy: { tension: 200, friction: 20 },
+    gentle: { tension: 120, friction: 14 },
+    bouncy: { tension: 180, friction: 12 },
   },
 };
 

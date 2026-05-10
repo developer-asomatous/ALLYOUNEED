@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../constants/theme';
 import { MediaInfo } from '../store/appStore';
+import { isYouTubeUrl, fetchYouTubeClientInfo } from './youtubeClient';
 
 /**
  * ═══════════════════════════════════════════════════
@@ -21,6 +22,7 @@ export class ApiError extends Error {
     public statusCode: number = 0,
     public isTimeout: boolean = false,
     public isNetworkError: boolean = false,
+    public details: string = '',
   ) {
     super(message);
     this.name = 'ApiError';
@@ -134,13 +136,20 @@ async function resilientFetch(
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new ApiError(
+        const errBody = await res.json().catch(() => ({ error: 'Unknown error', details: '' }));
+        const apiErr = new ApiError(
           errBody.error || `HTTP ${res.status}`,
           res.status,
           false,
           false,
+          errBody.details || '',
         );
+        // Don't retry ANY 4xx or 5xx with a real error message from backend
+        // These are deterministic (e.g. yt-dlp errors, unsupported URLs)
+        if (errBody.error && errBody.error !== 'Unknown error') {
+          throw apiErr;
+        }
+        throw apiErr;
       }
 
       return res;
@@ -150,11 +159,8 @@ async function resilientFetch(
       if (err.name === 'AbortError') {
         lastError = new ApiError('Request timed out', 0, true, false);
       } else if (err instanceof ApiError) {
-        // Don't retry client errors (4xx)
-        if (err.statusCode >= 400 && err.statusCode < 500) {
-          throw err;
-        }
-        lastError = err;
+        // Don't retry — backend gave a definitive answer
+        throw err;
       } else {
         lastError = new ApiError(
           err.message || 'Network error',
@@ -178,27 +184,38 @@ async function resilientFetch(
 // ── Public API ──
 
 /**
- * Fetch media info from backend (with caching)
+ * Fetch media info — YouTube goes client-side (phone IP), everything else uses backend.
  */
 export async function fetchInfo(url: string): Promise<MediaInfo> {
   // Check cache first
   const cached = mediaInfoCache.get(url);
   if (cached) return cached;
 
+  // YouTube: download directly from phone (residential IP = never blocked)
+  if (isYouTubeUrl(url)) {
+    try {
+      console.log('[AYN] YouTube detected — using client-side extraction');
+      const info = await fetchYouTubeClientInfo(url);
+      mediaInfoCache.set(url, info);
+      return info;
+    } catch (ytErr: any) {
+      console.warn('[AYN] YouTube client-side failed, trying backend:', ytErr.message);
+      // Fall through to backend as last resort
+    }
+  }
+
+  // All other platforms (Instagram, TikTok, etc.) + YouTube fallback
   const res = await resilientFetch(`${API_BASE_URL}/info`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
-    timeoutMs: 90000, // Render free tier cold start can take 30-60s + yt-dlp 5-10s
-    maxRetries: 2,
+    timeoutMs: 30000,
+    maxRetries: 1,
     retryDelayMs: 2000,
   });
 
   const info: MediaInfo = await res.json();
-
-  // Cache the result
   mediaInfoCache.set(url, info);
-
   return info;
 }
 

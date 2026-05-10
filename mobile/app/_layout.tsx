@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useShareIntentHandler } from '../services/shareIntent';
 import { initializeUnityAds } from '../services/admob';
+import { configureNotifications, requestNotificationPermission } from '../services/notifications';
 import { clearAllPollers } from '../services/downloadQueue';
 import { AppState } from 'react-native';
 
@@ -21,8 +22,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      // Preload first rewarded ad so it's ready when needed
       initializeUnityAds();
+      // Setup notifications
+      configureNotifications().then(() => {
+        requestNotificationPermission();
+      });
     }
   }, [loaded]);
 
@@ -44,7 +48,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#0A0A0F' },
+          contentStyle: { backgroundColor: '#060B14' },
           animation: 'slide_from_bottom',
         }}
       >

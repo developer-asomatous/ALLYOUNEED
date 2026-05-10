@@ -32,42 +32,30 @@ export default function TabLayout() {
         ),
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="downloads"
-        options={{
-          title: 'Library',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'folder' : 'folder-outline'} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="farm"
-        options={{
-          title: 'Earn',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'leaf' : 'leaf-outline'} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'cog' : 'cog-outline'} color={color} focused={focused} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{
+        title: 'Home',
+        tabBarIcon: ({ color, focused }) => (
+          <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} focused={focused} />
+        ),
+      }} />
+      <Tabs.Screen name="downloads" options={{
+        title: 'Library',
+        tabBarIcon: ({ color, focused }) => (
+          <TabBarIcon name={focused ? 'folder' : 'folder-outline'} color={color} focused={focused} />
+        ),
+      }} />
+      <Tabs.Screen name="farm" options={{
+        title: 'Earn',
+        tabBarIcon: ({ color, focused }) => (
+          <TabBarIcon name={focused ? 'leaf' : 'leaf-outline'} color={color} focused={focused} />
+        ),
+      }} />
+      <Tabs.Screen name="settings" options={{
+        title: 'Settings',
+        tabBarIcon: ({ color, focused }) => (
+          <TabBarIcon name={focused ? 'cog' : 'cog-outline'} color={color} focused={focused} />
+        ),
+      }} />
     </Tabs>
   );
 }
@@ -76,23 +64,23 @@ const styles = StyleSheet.create({
   dock: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 24 : 16,
-    left: 20,
-    right: 20,
-    height: 64,
-    borderRadius: 22,
+    left: 16,
+    right: 16,
+    height: 66,
+    borderRadius: 24,
     borderTopWidth: 0,
     backgroundColor: 'transparent',
     ...Shadows.dock,
   },
   dockBg: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: 'hidden',
   },
   dockInner: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: Colors.bg.glass,
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: Colors.border.glass,
   },
@@ -110,9 +98,7 @@ const styles = StyleSheet.create({
     height: 30,
     marginTop: Platform.OS === 'ios' ? 6 : 4,
   },
-  iconActive: {
-    // Subtle scale handled by icon color change
-  },
+  iconActive: {},
   activeDot: {
     width: 4,
     height: 4,

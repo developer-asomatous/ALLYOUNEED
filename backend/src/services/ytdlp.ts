@@ -69,7 +69,10 @@ initCookies();
 
 function getCookieArgs(): string[] {
   // Always check dynamically — cookies may be uploaded at runtime via API
-  if (fs.existsSync(COOKIES_PATH) && fs.statSync(COOKIES_PATH).size > 10) {
+  const exists = fs.existsSync(COOKIES_PATH);
+  const size = exists ? fs.statSync(COOKIES_PATH).size : 0;
+  console.log(`[yt-dlp] Cookie check: exists=${exists}, size=${size}, path=${COOKIES_PATH}`);
+  if (exists && size > 10) {
     return ['--cookies', COOKIES_PATH];
   }
   return [];
@@ -270,6 +273,7 @@ export function fetchMediaInfo(url: string): Promise<MediaInfo> {
       url,
     ];
 
+    console.log(`[yt-dlp] Info args: ${JSON.stringify(args)}`);
     const proc = spawn(YTDLP_BIN, args);
     let stdout = '';
     let stderr = '';
