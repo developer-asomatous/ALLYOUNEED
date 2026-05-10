@@ -493,3 +493,19 @@ a,button,[class*="cursor-target"]{cursor:none}
   .trust{flex-direction:column;align-items:center;gap:12px}
   .marquee-track{gap:32px}
 }
+
+/* ══════════════════════════════════ */
+/*  Ad Container Styling             */
+/* ══════════════════════════════════ */
+.ad-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.ad-container ins {
+  background: transparent !important;
+  border-radius: var(--radius-sm);
+}

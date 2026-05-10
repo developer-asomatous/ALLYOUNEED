@@ -5,6 +5,9 @@ import { useAppStore } from '../store/appStore';
 import { useUsageStore } from '../store/usageStore';
 import { isValidUrl } from '../utils/helpers';
 import { fetchInfo, startDownload, getJobStatus } from './api';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import { API_BASE_URL } from '../constants/theme';
 
 /**
  * Extract a URL from shared text.
@@ -101,8 +104,7 @@ export function useShareIntentHandler() {
         imageOnly: detectedType === 'image',
       });
 
-      // Record download for usage tracking
-      recordDownload();
+      // Record download for usage tracking (moved to success callback in poller)
 
       addDownload({
         id: jobId,
@@ -131,7 +133,40 @@ export function useShareIntentHandler() {
             eta: status.eta,
             error: status.error || undefined,
           });
-          if (status.status === 'done' || status.status === 'failed') {
+          if (status.status === 'done') {
+            clearInterval(interval);
+            // Record on success only
+            recordDownload();
+
+            // Auto-save to device
+            try {
+              const dl = useAppStore.getState().downloads.find(d => d.id === jobId);
+              if (dl) {
+                const ext = dl.format || 'mp4';
+                const safeName = (dl.title || 'download')
+                  .replace(/[^a-zA-Z0-9_\-. ]/g, '')
+                  .substring(0, 50)
+                  .trim();
+                const fname = `${safeName}_${jobId}.${ext}`;
+                const sUrl = API_BASE_URL.replace('/v1', '') + `/v1/stream/${jobId}`;
+                const dest = new FileSystem.File(FileSystem.Paths.cache, fname);
+                const saved = await FileSystem.File.downloadFileAsync(sUrl, dest, { idempotent: true });
+                if (saved.exists) {
+                  updateDownload(jobId, { localUri: saved.uri });
+                  const mediaExts = ['mp4', 'mkv', 'webm', 'mov', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+                  if (mediaExts.includes(ext)) {
+                    const { status: ps } = await MediaLibrary.requestPermissionsAsync();
+                    if (ps === 'granted') {
+                      await MediaLibrary.saveToLibraryAsync(saved.uri);
+                      console.log(`[AYN-Share] Saved to gallery: ${fname}`);
+                    }
+                  }
+                }
+              }
+            } catch (e: any) {
+              console.warn('[AYN-Share] Auto-save failed:', e.message);
+            }
+          } else if (status.status === 'failed') {
             clearInterval(interval);
           }
         } catch {

@@ -19,7 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore, MediaFormat } from '../../store/appStore';
 import { useUsageStore } from '../../store/usageStore';
 import { fetchInfo, startDownload, getJobStatus } from '../../services/api';
-import { Colors, Spacing, BorderRadius, FontSize, Shadows } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, FontSize, Shadows, API_BASE_URL } from '../../constants/theme';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { formatBytes, formatDuration, isValidUrl } from '../../utils/helpers';
 import { registerPoller, clearPoller } from '../../services/downloadQueue';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
@@ -192,6 +194,46 @@ export default function HomeScreen() {
           // Only count successful downloads against daily limit
           recordDownload();
           clearPoller(jobId);
+
+          // Auto-save to device storage
+          try {
+            const dl = useAppStore.getState().downloads.find(d => d.id === jobId);
+            if (dl) {
+              const ext = dl.format || 'mp4';
+              const sanitizedTitle = (dl.title || 'download')
+                .replace(/[^a-zA-Z0-9_\-. ]/g, '')
+                .substring(0, 50)
+                .trim();
+              const filename = `${sanitizedTitle}_${jobId}.${ext}`;
+              const streamUrl = API_BASE_URL.replace('/v1', '') + `/v1/stream/${jobId}`;
+
+              // Create destination file in cache
+              const destFile = new FileSystem.File(FileSystem.Paths.cache, filename);
+
+              // Download file from backend to local cache using static method
+              const downloadedFile = await FileSystem.File.downloadFileAsync(
+                streamUrl,
+                destFile,
+                { idempotent: true }
+              );
+
+              if (downloadedFile.exists) {
+                updateDownload(jobId, { localUri: downloadedFile.uri });
+
+                // Auto-save media files to gallery
+                const mediaExts = ['mp4', 'mkv', 'webm', 'mov', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+                if (mediaExts.includes(ext)) {
+                  const { status: permStatus } = await MediaLibrary.requestPermissionsAsync();
+                  if (permStatus === 'granted') {
+                    await MediaLibrary.saveToLibraryAsync(downloadedFile.uri);
+                    console.log(`[AYN] Saved to gallery: ${filename}`);
+                  }
+                }
+              }
+            }
+          } catch (saveErr: any) {
+            console.warn('[AYN] Auto-save failed:', saveErr.message);
+          }
         } else if (status.status === 'failed') {
           // Failed downloads do NOT count
           clearPoller(jobId);
