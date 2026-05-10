@@ -263,11 +263,8 @@ export function fetchMediaInfo(url: string): Promise<MediaInfo> {
       '--no-check-certificates',
       '--socket-timeout', '15',
       '--extractor-retries', '3',
-      // Anti-bot: use web client, add headers to look like a real browser
-      '--extractor-args', 'youtube:player_client=web',
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       '--add-header', 'Accept-Language:en-US,en;q=0.9',
-      '--add-header', 'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       ...getCookieArgs(),
       url,
     ];
@@ -440,10 +437,7 @@ export function downloadMedia(
     args.push('--newline');
     args.push('--no-playlist');
     args.push('--no-warnings');
-    // Anti-bot: use web client
-    args.push('--extractor-args', 'youtube:player_client=web');
     args.push('--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
-    args.push('--add-header', 'Accept-Language:en-US,en;q=0.9');
     args.push(...getCookieArgs());
 
     // ⚡ Use aria2c as external downloader for 16x speed
