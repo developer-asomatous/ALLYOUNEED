@@ -23,7 +23,8 @@ const UnityAdsNative = NativeModules.UnityAdsModule;
 const UNITY_GAME_ID = Platform.OS === 'ios' ? '6111205' : '6111204';
 const REWARDED_PLACEMENT = Platform.OS === 'ios' ? 'Rewarded_iOS' : 'Rewarded_Android';
 const INTERSTITIAL_PLACEMENT = Platform.OS === 'ios' ? 'Interstitial_iOS' : 'Interstitial_Android';
-const TEST_MODE = __DEV__;
+// Force test mode ON until production placements are verified on Unity Dashboard
+const TEST_MODE = true;
 
 // ── State ──
 let isInitialized = false;

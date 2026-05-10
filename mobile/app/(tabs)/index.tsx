@@ -153,7 +153,7 @@ export default function HomeScreen() {
 
     try {
       const { jobId } = await startDownload(jobData);
-      recordDownload();
+      // NOTE: recordDownload() is called in pollJobStatus on SUCCESS only
       addDownload({
         id: jobId,
         url: mediaInfo.url,
@@ -188,7 +188,12 @@ export default function HomeScreen() {
           eta: status.eta,
           error: status.error || undefined,
         });
-        if (status.status === 'done' || status.status === 'failed') {
+        if (status.status === 'done') {
+          // Only count successful downloads against daily limit
+          recordDownload();
+          clearPoller(jobId);
+        } else if (status.status === 'failed') {
+          // Failed downloads do NOT count
           clearPoller(jobId);
         }
       } catch {
