@@ -218,6 +218,9 @@ export function fetchMediaInfo(url: string): Promise<MediaInfo> {
       '--dump-json',
       '--no-playlist',
       '--no-warnings',
+      '--no-check-certificates',
+      '--socket-timeout', '15',
+      '--extractor-retries', '1',
       url,
     ];
 
