@@ -52,13 +52,6 @@
           "savePhotosPermission": "AYN needs permission to save downloads to your gallery."
         }
       ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-9788661852462172~7397361052",
-          "iosAppId": "ca-app-pub-9788661852462172~7397361052"
-        }
-      ],
       "./plugins/withShareExtension"
     ],
     "experiments": {

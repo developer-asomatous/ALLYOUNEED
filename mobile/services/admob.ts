@@ -1,130 +1,132 @@
-import { Platform } from 'react-native';
-import {
-  RewardedAd,
-  RewardedAdEventType,
-  AdEventType,
-  TestIds,
-} from 'react-native-google-mobile-ads';
+import { NativeModules, Platform } from 'react-native';
 
 /**
  * ═══════════════════════════════════════
- *  AYN AdMob Rewarded Ad Service
+ *  AYN Unity Ads Service
  * ═══════════════════════════════════════
  *
- * Uses Google AdMob rewarded ads for:
- *   1. Daily unlock (watch 2 ads → unlimited today)
- *   2. Ad Farm (watch 20 ads → 7 days unlimited)
+ * Uses Unity Ads for monetization via native Android SDK.
  *
- * In __DEV__ mode, uses Google's test ad IDs.
- * In production, uses the real ad unit IDs.
+ * Game IDs:
+ *   Android: 6111204
+ *   iOS: 6111205
+ *
+ * Placement IDs:
+ *   Rewarded: Rewarded_Android / Rewarded_iOS
+ *   Interstitial: Interstitial_Android / Interstitial_iOS
  */
 
-// ── Ad Unit IDs ──
-const REWARDED_AD_UNIT_ID = __DEV__
-  ? TestIds.REWARDED
-  : 'ca-app-pub-9788661852462172/7680460339';
+// ── Native Module ──
+const UnityAdsNative = NativeModules.UnityAdsModule;
+
+// ── Configuration ──
+const UNITY_GAME_ID = Platform.OS === 'ios' ? '6111205' : '6111204';
+const REWARDED_PLACEMENT = Platform.OS === 'ios' ? 'Rewarded_iOS' : 'Rewarded_Android';
+const INTERSTITIAL_PLACEMENT = Platform.OS === 'ios' ? 'Interstitial_iOS' : 'Interstitial_Android';
+const TEST_MODE = __DEV__;
 
 // ── State ──
-let currentAd: RewardedAd | null = null;
-let isAdLoading = false;
+let isInitialized = false;
 let isAdReady = false;
 
 /**
- * Preload a rewarded ad so it's ready to show instantly.
- * Call this early (e.g., on app start or after showing an ad).
+ * Initialize Unity Ads SDK.
+ * Call this once on app startup.
  */
-export function preloadRewardedAd(): void {
-  if (isAdLoading || isAdReady) return;
+export async function initializeUnityAds(): Promise<void> {
+  if (isInitialized) return;
 
-  isAdLoading = true;
-  currentAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID, {
-    keywords: ['media', 'downloader', 'video', 'music'],
-  });
+  if (!UnityAdsNative) {
+    console.warn('[UnityAds] Native module not available — running in Expo Go?');
+    isInitialized = true; // Allow app to work without ads in Expo Go
+    return;
+  }
 
-  currentAd.addAdEventListener(AdEventType.LOADED, () => {
-    isAdLoading = false;
-    isAdReady = true;
-  });
+  try {
+    await UnityAdsNative.initialize(UNITY_GAME_ID, TEST_MODE);
+    isInitialized = true;
+    console.log(`[UnityAds] ✅ Initialized — Game ID: ${UNITY_GAME_ID}, Test: ${TEST_MODE}`);
 
-  currentAd.addAdEventListener(AdEventType.ERROR, (error) => {
-    isAdLoading = false;
-    isAdReady = false;
-    console.warn('[AdMob] Ad load error:', error.message);
-  });
-
-  currentAd.load();
+    // Pre-load the first rewarded ad
+    preloadRewardedAd();
+  } catch (error: any) {
+    console.warn('[UnityAds] Init error:', error?.message || error);
+    isInitialized = true; // Don't block the app
+  }
 }
 
 /**
- * Show a rewarded ad and return a promise that resolves when the user
- * earns the reward (watched the full ad), or rejects on error/dismiss.
- *
- * @returns Promise<boolean> — true if reward earned, false if dismissed
+ * Preload a rewarded ad so it's ready to show.
  */
-export function showRewardedAd(): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    if (!currentAd || !isAdReady) {
-      // Try to load and show
-      const ad = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID, {
-        keywords: ['media', 'downloader', 'video', 'music'],
-      });
+export async function preloadRewardedAd(): Promise<void> {
+  if (!UnityAdsNative) {
+    isAdReady = true; // Stub for Expo Go
+    return;
+  }
 
-      let rewardEarned = false;
+  try {
+    await UnityAdsNative.loadAd(REWARDED_PLACEMENT);
+    isAdReady = true;
+    console.log('[UnityAds] ✅ Rewarded ad loaded');
+  } catch (error: any) {
+    isAdReady = false;
+    console.warn('[UnityAds] Load error:', error?.message || error);
+  }
+}
 
-      ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
-        rewardEarned = true;
-      });
+/**
+ * Show a rewarded ad.
+ * Returns true if the user watched the full ad (earned reward).
+ * Returns false if they skipped.
+ */
+export async function showRewardedAd(): Promise<boolean> {
+  if (!UnityAdsNative) {
+    console.log('[UnityAds] No native module — granting reward (dev mode)');
+    return true;
+  }
 
-      ad.addAdEventListener(AdEventType.CLOSED, () => {
-        // Preload next ad
-        isAdReady = false;
-        currentAd = null;
-        preloadRewardedAd();
-        resolve(rewardEarned);
-      });
+  if (!isInitialized) {
+    await initializeUnityAds();
+  }
 
-      ad.addAdEventListener(AdEventType.ERROR, (error) => {
-        console.warn('[AdMob] Ad error:', error.message);
-        isAdReady = false;
-        currentAd = null;
-        reject(new Error(`Ad failed: ${error.message}`));
-      });
-
-      ad.addAdEventListener(AdEventType.LOADED, () => {
-        ad.show();
-      });
-
-      ad.load();
-      return;
+  try {
+    // If ad isn't loaded yet, load it first
+    if (!isAdReady) {
+      await UnityAdsNative.loadAd(REWARDED_PLACEMENT);
     }
 
-    // Ad already preloaded — show it
-    let rewardEarned = false;
+    // Show the ad — returns true if COMPLETED, false if SKIPPED
+    const rewarded: boolean = await UnityAdsNative.showAd(REWARDED_PLACEMENT);
 
-    currentAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
-      rewardEarned = true;
-    });
+    // Pre-load next ad
+    isAdReady = false;
+    preloadRewardedAd();
 
-    currentAd.addAdEventListener(AdEventType.CLOSED, () => {
-      isAdReady = false;
-      currentAd = null;
-      preloadRewardedAd();
-      resolve(rewardEarned);
-    });
-
-    currentAd.addAdEventListener(AdEventType.ERROR, (error) => {
-      isAdReady = false;
-      currentAd = null;
-      reject(new Error(`Ad failed: ${error.message}`));
-    });
-
-    currentAd.show();
-  });
+    return rewarded;
+  } catch (error: any) {
+    console.warn('[UnityAds] Show error:', error?.message || error);
+    isAdReady = false;
+    preloadRewardedAd(); // Try to recover
+    throw new Error(`Ad failed: ${error?.message || 'Unknown error'}`);
+  }
 }
 
 /**
- * Check if a rewarded ad is ready to show (preloaded).
+ * Check if a rewarded ad is ready to show.
  */
 export function isRewardedAdReady(): boolean {
   return isAdReady;
+}
+
+/**
+ * Get Unity Ads configuration for reference.
+ */
+export function getUnityAdsConfig() {
+  return {
+    gameId: UNITY_GAME_ID,
+    rewardedPlacement: REWARDED_PLACEMENT,
+    interstitialPlacement: INTERSTITIAL_PLACEMENT,
+    testMode: TEST_MODE,
+    nativeAvailable: !!UnityAdsNative,
+  };
 }

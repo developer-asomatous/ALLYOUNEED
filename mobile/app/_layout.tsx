@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useShareIntentHandler } from '../services/shareIntent';
-import { preloadRewardedAd } from '../services/admob';
+import { initializeUnityAds } from '../services/admob';
 import { clearAllPollers } from '../services/downloadQueue';
 import { AppState } from 'react-native';
 
@@ -22,7 +22,7 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
       // Preload first rewarded ad so it's ready when needed
-      preloadRewardedAd();
+      initializeUnityAds();
     }
   }, [loaded]);
 
