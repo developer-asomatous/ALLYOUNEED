@@ -154,26 +154,34 @@ export function useShareIntentHandler() {
   useEffect(() => {
     if (Platform.OS === 'android') {
       // Handle shares coming from other apps on Android
-      ReceiveSharingIntent.getReceivedFiles(
-        (files: any[]) => {
-          if (files && files.length > 0) {
-            const shared = files[0];
-            // For text shares (URLs), the text is in weblink or text field
-            const sharedText = shared.weblink || shared.text || shared.contentUri || '';
-            const url = extractUrl(sharedText);
-            if (url) {
-              autoDownload(url);
+      try {
+        ReceiveSharingIntent.getReceivedFiles(
+          (files: any[]) => {
+            if (files && files.length > 0) {
+              const shared = files[0];
+              // For text shares (URLs), the text is in weblink or text field
+              const sharedText = shared.weblink || shared.text || shared.contentUri || '';
+              const url = extractUrl(sharedText);
+              if (url) {
+                autoDownload(url);
+              }
             }
-          }
-        },
-        (error: any) => {
-          console.warn('[ShareIntent] Error receiving shared files:', error);
-        },
-        'com.ayn.allyouneed' // Your app's package name
-      );
+          },
+          (error: any) => {
+            // Silently ignore — NullPointerException on cold start is expected
+          },
+          'com.ayn.allyouneed' // Your app's package name
+        );
+      } catch (e) {
+        // ReceiveSharingIntent may throw on cold start with no intent
+      }
 
       return () => {
-        ReceiveSharingIntent.clearReceivedFiles();
+        try {
+          ReceiveSharingIntent.clearReceivedFiles();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
       };
     }
 

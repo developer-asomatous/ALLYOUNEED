@@ -90,7 +90,7 @@ async function resilientFetch(
   } = {},
 ): Promise<Response> {
   const {
-    timeoutMs = 15000,
+    timeoutMs = 45000,
     maxRetries = 2,
     retryDelayMs = 1000,
     ...fetchOptions
@@ -166,7 +166,7 @@ export async function fetchInfo(url: string): Promise<MediaInfo> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
-    timeoutMs: 20000, // Media info can take longer
+    timeoutMs: 60000, // Render free tier cold start can take 30-50s
     maxRetries: 2,
   });
 
