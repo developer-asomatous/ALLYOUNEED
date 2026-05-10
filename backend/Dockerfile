@@ -11,10 +11,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
+# Copy source and force clean build
 COPY . .
-RUN npm run build
+RUN rm -rf dist && npm run build
 
 RUN mkdir -p /tmp/ayn-downloads
+
+# Verify no webtorrent in build
+RUN ! grep -r "webtorrent" dist/ || (echo "ERROR: webtorrent still in build!" && exit 1)
 
 EXPOSE 3000
 ENV PORT=3000
