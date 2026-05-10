@@ -1,6 +1,5 @@
 import { API_BASE_URL } from '../constants/theme';
 import { MediaInfo } from '../store/appStore';
-import { isYouTubeUrl, fetchYouTubeClientInfo } from './youtubeClient';
 
 /**
  * ═══════════════════════════════════════════════════
@@ -184,27 +183,23 @@ async function resilientFetch(
 // ── Public API ──
 
 /**
- * Fetch media info — YouTube goes client-side (phone IP), everything else uses backend.
+ * Fetch media info from backend (with caching).
+ * YouTube is blocked early with a clean message.
  */
 export async function fetchInfo(url: string): Promise<MediaInfo> {
+  // Block YouTube immediately — no wasted server calls
+  if (/(?:youtube\.com|youtu\.be)/.test(url)) {
+    throw new ApiError(
+      'YouTube downloads are not supported',
+      0, false, false,
+      'YouTube blocks all third-party downloads. Use YouTube Premium for offline viewing.',
+    );
+  }
+
   // Check cache first
   const cached = mediaInfoCache.get(url);
   if (cached) return cached;
 
-  // YouTube: download directly from phone (residential IP = never blocked)
-  if (isYouTubeUrl(url)) {
-    try {
-      console.log('[AYN] YouTube detected — using client-side extraction');
-      const info = await fetchYouTubeClientInfo(url);
-      mediaInfoCache.set(url, info);
-      return info;
-    } catch (ytErr: any) {
-      console.warn('[AYN] YouTube client-side failed, trying backend:', ytErr.message);
-      // Fall through to backend as last resort
-    }
-  }
-
-  // All other platforms (Instagram, TikTok, etc.) + YouTube fallback
   const res = await resilientFetch(`${API_BASE_URL}/info`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

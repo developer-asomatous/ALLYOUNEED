@@ -3,8 +3,7 @@ import { AppState, Platform, Linking, NativeModules } from 'react-native';
 import ReceiveSharingIntent from 'react-native-receive-sharing-intent';
 import { useAppStore } from '../store/appStore';
 import { useUsageStore } from '../store/usageStore';
-import { isValidUrl, isShortenerUrl, resolveRedirectUrl } from '../utils/helpers';
-import { isYouTubeUrl } from './youtubeClient';
+import { isValidUrl, isShortenerUrl, resolveRedirectUrl, detectPlatform } from '../utils/helpers';
 import { fetchInfo, startDownload, getJobStatus, warmupBackend } from './api';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
@@ -88,6 +87,13 @@ export function useShareIntentHandler() {
         resolvedUrl = await resolveRedirectUrl(url);
       }
 
+      // Block YouTube immediately with a clean message
+      if (/(?:youtube\.com|youtu\.be)/.test(resolvedUrl)) {
+        showDownloadFailed('pending', 'YouTube', 'YouTube downloads are not supported').catch(() => {});
+        processingRef.current = false;
+        return;
+      }
+
       // Fetch media info — api.ts handles timeout+retry internally
       const info = await fetchInfo(resolvedUrl);
 
@@ -115,67 +121,7 @@ export function useShareIntentHandler() {
         return;
       }
 
-      // If we got a direct streaming URL (YouTube client-side), download directly on phone
-      const hasDirectUrl = (selectedFormat as any).url && isYouTubeUrl(info.url);
-
-      if (hasDirectUrl) {
-        // Direct device download — no backend needed
-        const directUrl = (selectedFormat as any).url;
-        const jobId = `yt-direct-${Date.now()}`;
-        const ext = selectedFormat.ext || 'mp4';
-        const safeTitle = (info.title || 'youtube_video').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80);
-        const filename = `${safeTitle}.${ext}`;
-        const localUri = `${FileSystem.cacheDirectory}${filename}`;
-
-        showDownloadStarted(jobId, info.title, 'youtube').catch(() => {});
-        addDownload({
-          id: jobId,
-          url: info.url,
-          title: info.title,
-          thumbnail: info.thumbnail,
-          platform: 'youtube',
-          status: 'downloading',
-          progress: 0,
-          speed: '0 B/s',
-          eta: '--:--',
-          format: ext,
-          quality: selectedFormat.quality,
-          fileSize: selectedFormat.filesize || undefined,
-          createdAt: Date.now(),
-        });
-
-        // Download file directly to phone
-        const downloadResumable = FileSystem.createDownloadResumable(
-          directUrl,
-          localUri,
-          { headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36' } },
-          (downloadProgress) => {
-            const pct = downloadProgress.totalBytesWritten / (downloadProgress.totalBytesExpectedToWrite || 1);
-            updateDownload(jobId, { progress: Math.round(pct * 100), status: 'downloading' });
-          },
-        );
-
-        try {
-          const result = await downloadResumable.downloadAsync();
-          if (result?.uri) {
-            // Save to gallery
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-            if (status === 'granted') {
-              await MediaLibrary.createAssetAsync(result.uri);
-            }
-            updateDownload(jobId, { progress: 100, status: 'completed', localUri: result.uri });
-            recordDownload();
-            showDownloadComplete(jobId, info.title, 'youtube').catch(() => {});
-          }
-        } catch (dlErr: any) {
-          updateDownload(jobId, { status: 'failed' });
-          showDownloadFailed(jobId, info.title, dlErr.message || 'Download failed').catch(() => {});
-        }
-        processingRef.current = false;
-        return;
-      }
-
-      // Non-YouTube or no direct URL: use backend download pipeline
+      // Start the download job on backend
       const { jobId } = await startDownload({
         url: info.url,
         formatId: selectedFormat.id,
@@ -212,7 +158,9 @@ export function useShareIntentHandler() {
       // Parse error for smart notification
       const details = (err.details || err.message || '').toLowerCase();
       let errMsg = 'Could not process this link';
-      if (details.includes('login') || details.includes('cookies') || details.includes('logged-in')) {
+      if (details.includes('youtube downloads are not supported') || err.message?.includes('YouTube')) {
+        errMsg = 'YouTube downloads are not supported';
+      } else if (details.includes('login') || details.includes('cookies') || details.includes('logged-in')) {
         errMsg = 'This post requires login — try a public link';
       } else if (details.includes('private') || details.includes('restricted')) {
         errMsg = 'This content is private';
