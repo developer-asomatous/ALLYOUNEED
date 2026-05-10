@@ -208,10 +208,8 @@ export function downloadWithAria2c(
  * multi-connection downloads for platform video/audio segments too.
  */
 export function getYtdlpAria2cArgs(): string[] {
-  if (!ARIA2C_BIN) return [];
-
-  return [
-    '--downloader', 'aria2c',
-    '--downloader-args', 'aria2c:-x 16 -s 16 -k 1M',
-  ];
+  // Disabled: yt-dlp 2026.x mangles aria2c args causing download failures.
+  // aria2c is still used for direct file downloads (non-yt-dlp).
+  // yt-dlp's built-in downloader handles YouTube/Instagram etc. fine.
+  return [];
 }
