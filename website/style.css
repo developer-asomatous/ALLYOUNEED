@@ -503,9 +503,27 @@ a,button,[class*="cursor-target"]{cursor:none}
   padding: 16px 20px;
   position: relative;
   z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.ad-container ins {
-  background: transparent !important;
+.ad-container iframe {
+  border: none !important;
   border-radius: var(--radius-sm);
+  max-width: 100%;
+}
+
+.ad-banner {
+  min-height: 90px;
+}
+
+.ad-rectangle {
+  min-height: 250px;
+}
+
+@media(max-width:768px) {
+  .ad-banner { display: none; }
+  .ad-rectangle { min-height: auto; }
+  .ad-container iframe { max-width: 100%; height: auto; }
 }
