@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUsageStore, MAX_CONCURRENT_DEFAULT, MAX_CONCURRENT_BOOSTED } from '../store/usageStore';
 
 /**
  * ═══════════════════════════════════════════════════
@@ -8,14 +9,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * ═══════════════════════════════════════════════════
  *
  *  Handles:
- *  • Concurrent download limiting (max 3 simultaneous)
+ *  • Concurrent download limiting (max 3, or 4 with boost)
  *  • Download queue with priority
  *  • Retry failed downloads
  *  • Offline queuing
  *  • Cleanup of stale polling timers
  */
 
-const MAX_CONCURRENT_DOWNLOADS = 3;
+const MAX_CONCURRENT_DOWNLOADS = 3; // Default, can be boosted to 4
+
+/** Get the current max concurrent downloads (3 default, 4 if boosted) */
+function getDynamicMaxConcurrent(): number {
+  try {
+    return useUsageStore.getState().getMaxConcurrent();
+  } catch {
+    return MAX_CONCURRENT_DEFAULT;
+  }
+}
 
 export interface QueuedDownload {
   id: string;
@@ -70,7 +80,9 @@ export const useDownloadQueue = create<DownloadQueueState>()(
       dequeue: () => {
         const state = get();
         if (state.queue.length === 0) return null;
-        if (state.activeIds.length >= state.maxConcurrent) return null;
+        // Dynamic max: check if extra slot is active
+        const dynamicMax = getDynamicMaxConcurrent();
+        if (state.activeIds.length >= dynamicMax) return null;
 
         const next = state.queue[0];
         set((s) => ({
@@ -120,7 +132,8 @@ export const useDownloadQueue = create<DownloadQueueState>()(
 
       canStartNew: () => {
         const state = get();
-        return state.activeIds.length < state.maxConcurrent;
+        const dynamicMax = getDynamicMaxConcurrent();
+        return state.activeIds.length < dynamicMax;
       },
 
       clearQueue: () => set({ queue: [], activeIds: [] }),

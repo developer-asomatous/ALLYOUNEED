@@ -7,32 +7,66 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  *  AYN Usage & Monetization Store
  * ═══════════════════════════════════════════════════
  * 
- *  Tier Model:
- *  • ₹10 one-time purchase (the app itself)
- *  • 3 free downloads/day
- *  • After 3: watch 2 rewarded ads → unlimited THAT day
+ *  Tier Model (v2):
+ *  • 4 free downloads per cycle
+ *  • After 4: watch 2 rewarded ads → 6 hours unlimited
+ *  • After 6hrs expire → 4 free again (grace) → 2 ads → 6hrs
  *  • Ad Farm: watch 20 full ads → 7 days unlimited
- *  • Ko-fi in Settings
+ *  • Interstitial ad every 5th download (non-blocking)
+ *  • Rewarded ad → 4th concurrent download slot (45 min)
  */
 
-const FREE_DAILY_LIMIT = 3;
-const ADS_FOR_DAILY_UNLOCK = 2;
+const FREE_CYCLE_LIMIT = 4;
+const ADS_FOR_CYCLE_UNLOCK = 2;
+const CYCLE_UNLOCK_HOURS = 6;
 const ADS_FOR_WEEKLY_UNLOCK = 20;
 const WEEKLY_UNLOCK_DAYS = 7;
-const AD_DURATION_SECONDS = 15; // Simulated ad length
+const AD_DURATION_SECONDS = 15;
+const INTERSTITIAL_INTERVAL = 5;
+const EXTRA_SLOT_MINUTES = 45;
+const MAX_CONCURRENT_DEFAULT = 3;
+const MAX_CONCURRENT_BOOSTED = 4;
 
-export { FREE_DAILY_LIMIT, ADS_FOR_DAILY_UNLOCK, ADS_FOR_WEEKLY_UNLOCK, WEEKLY_UNLOCK_DAYS, AD_DURATION_SECONDS };
+// Legacy exports for backward compat
+const FREE_DAILY_LIMIT = FREE_CYCLE_LIMIT;
+const ADS_FOR_DAILY_UNLOCK = ADS_FOR_CYCLE_UNLOCK;
+
+export {
+  FREE_DAILY_LIMIT,
+  FREE_CYCLE_LIMIT,
+  ADS_FOR_DAILY_UNLOCK,
+  ADS_FOR_CYCLE_UNLOCK,
+  CYCLE_UNLOCK_HOURS,
+  ADS_FOR_WEEKLY_UNLOCK,
+  WEEKLY_UNLOCK_DAYS,
+  AD_DURATION_SECONDS,
+  INTERSTITIAL_INTERVAL,
+  EXTRA_SLOT_MINUTES,
+  MAX_CONCURRENT_DEFAULT,
+  MAX_CONCURRENT_BOOSTED,
+};
 
 interface UsageState {
-  // ── Daily tracking ──
+  // ── Cycle tracking ──
+  cycleDownloads: number;        // downloads in current free cycle
+  cycleAdsWatched: number;       // ads watched toward cycle unlock
+  cycleUnlockExpiry: string | null; // ISO date when 6hr unlock expires
+
+  // ── Legacy aliases (backward compat) ──
   dailyDownloads: number;
-  lastDownloadDate: string; // YYYY-MM-DD
-  dailyUnlocked: boolean;  // true = unlimited for today (via 2 ads)
-  dailyAdsWatched: number; // ads watched toward daily unlock
+  lastDownloadDate: string;
+  dailyUnlocked: boolean;
+  dailyAdsWatched: number;
 
   // ── Ad Farm ──
-  farmAdsWatched: number;        // total ads toward 20 for weekly unlock
-  farmUnlockExpiry: string | null; // ISO date when weekly unlock expires
+  farmAdsWatched: number;
+  farmUnlockExpiry: string | null;
+
+  // ── Interstitial tracking ──
+  downloadsSinceLastInterstitial: number;
+
+  // ── Extra download slot ──
+  extraSlotExpiry: string | null;
 
   // ── Lifetime stats ──
   totalDownloads: number;
@@ -46,7 +80,19 @@ interface UsageState {
   getRemainingFreeDownloads: () => number;
   isDailyUnlocked: () => boolean;
   isWeeklyUnlocked: () => boolean;
+  isCycleUnlocked: () => boolean;
   getUnlockStatus: () => 'free' | 'ads_needed' | 'unlimited_daily' | 'unlimited_weekly';
+
+  // ── Interstitial ──
+  incrementInterstitialCounter: () => void;
+  resetInterstitialCounter: () => void;
+  shouldShowInterstitial: () => boolean;
+
+  // ── Extra slot ──
+  hasExtraSlot: () => boolean;
+  unlockExtraSlot: () => void;
+  getMaxConcurrent: () => number;
+  getExtraSlotRemainingMs: () => number;
 }
 
 function getTodayStr(): string {
@@ -54,14 +100,15 @@ function getTodayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function isToday(dateStr: string): boolean {
-  return dateStr === getTodayStr();
-}
-
 export const useUsageStore = create<UsageState>()(
   persist(
     (set, get) => ({
-      // Daily
+      // Cycle
+      cycleDownloads: 0,
+      cycleAdsWatched: 0,
+      cycleUnlockExpiry: null,
+
+      // Legacy aliases
       dailyDownloads: 0,
       lastDownloadDate: '',
       dailyUnlocked: false,
@@ -71,35 +118,60 @@ export const useUsageStore = create<UsageState>()(
       farmAdsWatched: 0,
       farmUnlockExpiry: null,
 
+      // Interstitial
+      downloadsSinceLastInterstitial: 0,
+
+      // Extra slot
+      extraSlotExpiry: null,
+
       // Stats
       totalDownloads: 0,
       totalAdsWatched: 0,
 
-      // ── Record a download ──
+      // ══════════════════════════════════════
+      //  Record a download
+      // ══════════════════════════════════════
       recordDownload: () => {
         const state = get();
         const today = getTodayStr();
-        const isNewDay = state.lastDownloadDate !== today;
+
+        // Check if cycle unlock expired → reset cycle
+        const cycleExpired = state.cycleUnlockExpiry
+          && new Date(state.cycleUnlockExpiry) <= new Date();
 
         set({
-          dailyDownloads: isNewDay ? 1 : state.dailyDownloads + 1,
-          lastDownloadDate: today,
+          cycleDownloads: cycleExpired ? 1 : state.cycleDownloads + 1,
+          cycleAdsWatched: cycleExpired ? 0 : state.cycleAdsWatched,
+          cycleUnlockExpiry: cycleExpired ? null : state.cycleUnlockExpiry,
           totalDownloads: state.totalDownloads + 1,
-          // Reset daily unlocks on new day
-          ...(isNewDay ? { dailyUnlocked: false, dailyAdsWatched: 0 } : {}),
+          downloadsSinceLastInterstitial: state.downloadsSinceLastInterstitial + 1,
+          // Legacy
+          dailyDownloads: state.lastDownloadDate !== today
+            ? 1 : state.dailyDownloads + 1,
+          lastDownloadDate: today,
         });
       },
 
-      // ── Record an ad watched ──
+      // ══════════════════════════════════════
+      //  Record an ad watched
+      // ══════════════════════════════════════
       recordAdWatched: (type) => {
         const state = get();
         set({ totalAdsWatched: state.totalAdsWatched + 1 });
 
         if (type === 'daily') {
-          const newCount = state.dailyAdsWatched + 1;
+          const newCount = state.cycleAdsWatched + 1;
+          const unlocked = newCount >= ADS_FOR_CYCLE_UNLOCK;
           set({
+            cycleAdsWatched: newCount,
             dailyAdsWatched: newCount,
-            dailyUnlocked: newCount >= ADS_FOR_DAILY_UNLOCK,
+            dailyUnlocked: unlocked,
+            ...(unlocked ? {
+              cycleUnlockExpiry: new Date(
+                Date.now() + CYCLE_UNLOCK_HOURS * 60 * 60 * 1000
+              ).toISOString(),
+              cycleDownloads: 0, // Reset for next grace period
+            } : {}),
           });
         }
 
@@ -113,7 +185,7 @@ export const useUsageStore = create<UsageState>()(
                   farmUnlockExpiry: new Date(
                     Date.now() + WEEKLY_UNLOCK_DAYS * 24 * 60 * 60 * 1000
                   ).toISOString(),
-                  farmAdsWatched: 0, // Reset counter after unlock
+                  farmAdsWatched: 0,
                 }
               : {}),
           });
@@ -122,39 +194,59 @@ export const useUsageStore = create<UsageState>()(
 
       resetFarmProgress: () => set({ farmAdsWatched: 0 }),
 
-      // ── Can user download right now? ──
+      // ══════════════════════════════════════
+      //  Can user download right now?
+      // ══════════════════════════════════════
       canDownload: () => {
         const state = get();
-        const today = getTodayStr();
-        const isNewDay = state.lastDownloadDate !== today;
 
         // Weekly unlock active?
         if (state.farmUnlockExpiry && new Date(state.farmUnlockExpiry) > new Date()) {
           return true;
         }
 
-        // New day = reset
-        if (isNewDay) return true;
+        // 6-hour cycle unlock active?
+        if (state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) > new Date()) {
+          return true;
+        }
 
-        // Under free limit
-        if (state.dailyDownloads < FREE_DAILY_LIMIT) return true;
+        // Cycle unlock expired → grace period (new 4 free downloads)
+        if (state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) <= new Date()) {
+          // Expired — check if grace downloads remain
+          if (state.cycleDownloads < FREE_CYCLE_LIMIT) return true;
+          return false;
+        }
 
-        // Daily unlocked via ads
-        if (state.dailyUnlocked) return true;
+        // No unlock ever / first time — under free limit
+        if (state.cycleDownloads < FREE_CYCLE_LIMIT) return true;
 
         return false;
       },
 
       getRemainingFreeDownloads: () => {
         const state = get();
-        const today = getTodayStr();
-        if (state.lastDownloadDate !== today) return FREE_DAILY_LIMIT;
-        return Math.max(0, FREE_DAILY_LIMIT - state.dailyDownloads);
+
+        // If weekly unlocked
+        if (state.farmUnlockExpiry && new Date(state.farmUnlockExpiry) > new Date()) {
+          return 999; // unlimited
+        }
+
+        // If cycle unlocked
+        if (state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) > new Date()) {
+          return 999; // unlimited
+        }
+
+        return Math.max(0, FREE_CYCLE_LIMIT - state.cycleDownloads);
+      },
+
+      isCycleUnlocked: () => {
+        const state = get();
+        return !!(state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) > new Date());
       },
 
       isDailyUnlocked: () => {
         const state = get();
-        return isToday(state.lastDownloadDate) && state.dailyUnlocked;
+        return !!(state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) > new Date());
       },
 
       isWeeklyUnlocked: () => {
@@ -170,17 +262,63 @@ export const useUsageStore = create<UsageState>()(
           return 'unlimited_weekly';
         }
 
-        const today = getTodayStr();
-        const isNewDay = state.lastDownloadDate !== today;
+        // 6-hour cycle unlock
+        if (state.cycleUnlockExpiry && new Date(state.cycleUnlockExpiry) > new Date()) {
+          return 'unlimited_daily';
+        }
 
-        // Daily unlocked
-        if (!isNewDay && state.dailyUnlocked) return 'unlimited_daily';
-
-        // Under free limit
-        if (isNewDay || state.dailyDownloads < FREE_DAILY_LIMIT) return 'free';
+        // Under free limit (including grace after expired unlock)
+        if (state.cycleDownloads < FREE_CYCLE_LIMIT) return 'free';
 
         // Needs ads
         return 'ads_needed';
+      },
+
+      // ══════════════════════════════════════
+      //  Interstitial tracking
+      // ══════════════════════════════════════
+      incrementInterstitialCounter: () => {
+        set((s) => ({
+          downloadsSinceLastInterstitial: s.downloadsSinceLastInterstitial + 1,
+        }));
+      },
+
+      resetInterstitialCounter: () => {
+        set({ downloadsSinceLastInterstitial: 0 });
+      },
+
+      shouldShowInterstitial: () => {
+        const state = get();
+        return state.downloadsSinceLastInterstitial >= INTERSTITIAL_INTERVAL;
+      },
+
+      // ══════════════════════════════════════
+      //  Extra download slot (4th concurrent)
+      // ══════════════════════════════════════
+      hasExtraSlot: () => {
+        const state = get();
+        return !!(state.extraSlotExpiry && new Date(state.extraSlotExpiry) > new Date());
+      },
+
+      unlockExtraSlot: () => {
+        set({
+          extraSlotExpiry: new Date(
+            Date.now() + EXTRA_SLOT_MINUTES * 60 * 1000
+          ).toISOString(),
+        });
+      },
+
+      getMaxConcurrent: () => {
+        const state = get();
+        const hasSlot = state.extraSlotExpiry && new Date(state.extraSlotExpiry) > new Date();
+        return hasSlot ? MAX_CONCURRENT_BOOSTED : MAX_CONCURRENT_DEFAULT;
+      },
+
+      getExtraSlotRemainingMs: () => {
+        const state = get();
+        if (!state.extraSlotExpiry) return 0;
+        const remaining = new Date(state.extraSlotExpiry).getTime() - Date.now();
+        return Math.max(0, remaining);
       },
     }),
     {

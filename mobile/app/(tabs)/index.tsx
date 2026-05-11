@@ -14,10 +14,12 @@ import { registerPoller, clearPoller } from '../../services/downloadQueue';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import UsageBanner from '../../components/UsageBanner';
 import UsageGate from '../../components/UsageGate';
+import BoostSlotCard from '../../components/BoostSlotCard';
 import OfflineBanner from '../../components/OfflineBanner';
 import { MediaCardSkeleton } from '../../components/SkeletonLoader';
 import ToastNotification from '../../components/ToastNotification';
 import { showDownloadStarted, showDownloadComplete, showDownloadFailed, updateDownloadProgress, shouldNotifyProgress, clearProgressThrottle } from '../../services/notifications';
+import { showInterstitialAd } from '../../services/admob';
 
 const FETCH_STAGES = ['Resolving link...', 'Waking up server...', 'Fetching media info...', 'Processing formats...'];
 
@@ -32,7 +34,7 @@ export default function HomeScreen() {
   const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
   const isFetchingRef = useRef(false);
   const activePollerIds = useRef<string[]>([]);
-  const { canDownload, recordDownload } = useUsageStore();
+  const { canDownload, recordDownload, shouldShowInterstitial, resetInterstitialCounter } = useUsageStore();
   const { isConnected } = useNetworkStatus();
 
   useEffect(() => {
@@ -196,6 +198,11 @@ export default function HomeScreen() {
           }
           recordDownload();
           showDownloadComplete(jobId, mediaInfo.title).catch(() => {});
+          // Show interstitial every 5th download
+          if (shouldShowInterstitial()) {
+            resetInterstitialCounter();
+            showInterstitialAd().catch(() => {});
+          }
         } else {
           updateDownload(jobId, { status: 'failed', error: 'Download failed' });
           showDownloadFailed(jobId, mediaInfo.title, 'Download failed').catch(() => {});
@@ -234,6 +241,11 @@ export default function HomeScreen() {
         if (status.status === 'done') {
           recordDownload(); clearPoller(jobId); clearProgressThrottle(jobId);
           showDownloadComplete(jobId, title).catch(() => {});
+          // Show interstitial every 5th download
+          if (shouldShowInterstitial()) {
+            resetInterstitialCounter();
+            showInterstitialAd().catch(() => {});
+          }
           try {
             const dl = useAppStore.getState().downloads.find(d => d.id === jobId);
             if (dl) {
@@ -277,6 +289,7 @@ export default function HomeScreen() {
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <OfflineBanner />
           <UsageBanner onOpenFarm={() => setShowUsageGate(true)} />
+          <BoostSlotCard />
 
           {/* ── Header ── */}
           <View style={s.header}>

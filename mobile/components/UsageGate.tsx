@@ -14,9 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/theme';
 import {
   useUsageStore,
-  ADS_FOR_DAILY_UNLOCK,
+  ADS_FOR_CYCLE_UNLOCK,
   ADS_FOR_WEEKLY_UNLOCK,
   AD_DURATION_SECONDS,
+  CYCLE_UNLOCK_HOURS,
 } from '../store/usageStore';
 import { showRewardedAd, preloadRewardedAd } from '../services/admob';
 
@@ -57,7 +58,7 @@ export default function UsageGate({ visible, onClose, onUnlocked }: UsageGatePro
     }
   }, [visible]);
 
-  const dailyAdsRemaining = Math.max(0, ADS_FOR_DAILY_UNLOCK - dailyAdsWatched);
+  const dailyAdsRemaining = Math.max(0, ADS_FOR_CYCLE_UNLOCK - dailyAdsWatched);
   const farmAdsRemaining = Math.max(0, ADS_FOR_WEEKLY_UNLOCK - farmAdsWatched);
 
   // Show a real AdMob rewarded ad
@@ -74,7 +75,7 @@ export default function UsageGate({ visible, onClose, onUnlocked }: UsageGatePro
 
         if (type === 'daily') {
           const newCount = dailyAdsWatched + 1;
-          if (newCount >= ADS_FOR_DAILY_UNLOCK) {
+          if (newCount >= ADS_FOR_CYCLE_UNLOCK) {
             setTimeout(() => onUnlocked(), 300);
           } else {
             setMode('choose');
@@ -134,8 +135,8 @@ export default function UsageGate({ visible, onClose, onUnlocked }: UsageGatePro
                 </View>
                 <Text style={styles.title}>Daily Limit Reached</Text>
                 <Text style={styles.subtitle}>
-                  You've used your 3 free downloads today.{'\n'}
-                  Watch a short ad to keep downloading!
+                  You've used your 4 free downloads.{'\n'}
+                  Watch a short ad to unlock {CYCLE_UNLOCK_HOURS} hours!
                 </Text>
               </Animated.View>
 
@@ -149,13 +150,13 @@ export default function UsageGate({ visible, onClose, onUnlocked }: UsageGatePro
                   <Ionicons name="play-circle" size={28} color={Colors.accent.primary} />
                 </View>
                 <View style={styles.optionInfo}>
-                  <Text style={styles.optionTitle}>Watch Ad → Unlimited Today</Text>
+                  <Text style={styles.optionTitle}>Watch Ad → {CYCLE_UNLOCK_HOURS}h Unlimited</Text>
                   <Text style={styles.optionDesc}>
                     {dailyAdsRemaining} ad{dailyAdsRemaining !== 1 ? 's' : ''} remaining • ~{dailyAdsRemaining * AD_DURATION_SECONDS}s
                   </Text>
                 </View>
                 <View style={styles.optionBadge}>
-                  <Text style={styles.optionBadgeText}>{dailyAdsRemaining}/{ADS_FOR_DAILY_UNLOCK}</Text>
+                  <Text style={styles.optionBadgeText}>{dailyAdsRemaining}/{ADS_FOR_CYCLE_UNLOCK}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -201,7 +202,7 @@ export default function UsageGate({ visible, onClose, onUnlocked }: UsageGatePro
                 </Text>
               </View>
               <Text style={styles.timerLabel}>
-                Ad {dailyAdsWatched + 1} of {ADS_FOR_DAILY_UNLOCK} for today's unlock
+                Ad {dailyAdsWatched + 1} of {ADS_FOR_CYCLE_UNLOCK} for {CYCLE_UNLOCK_HOURS}h unlock
               </Text>
             </View>
           )}

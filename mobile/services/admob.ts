@@ -28,7 +28,8 @@ const TEST_MODE = false;
 
 // ── State ──
 let isInitialized = false;
-let isAdReady = false;
+let isRewardedAdReady = false;
+let isInterstitialReady = false;
 
 /**
  * Initialize Unity Ads SDK.
@@ -48,30 +49,35 @@ export async function initializeUnityAds(): Promise<void> {
     isInitialized = true;
     console.log(`[UnityAds] ✅ Initialized — Game ID: ${UNITY_GAME_ID}, Test: ${TEST_MODE}`);
 
-    // Pre-load the first rewarded ad
+    // Pre-load both ad types
     preloadRewardedAd();
+    preloadInterstitialAd();
   } catch (error: any) {
     console.warn('[UnityAds] Init error:', error?.message || error);
     isInitialized = true; // Don't block the app
   }
 }
 
+// ═══════════════════════════════════════
+//  Rewarded Ads
+// ═══════════════════════════════════════
+
 /**
  * Preload a rewarded ad so it's ready to show.
  */
 export async function preloadRewardedAd(): Promise<void> {
   if (!UnityAdsNative) {
-    isAdReady = true; // Stub for Expo Go
+    isRewardedAdReady = true; // Stub for Expo Go
     return;
   }
 
   try {
     await UnityAdsNative.loadAd(REWARDED_PLACEMENT);
-    isAdReady = true;
+    isRewardedAdReady = true;
     console.log('[UnityAds] ✅ Rewarded ad loaded');
   } catch (error: any) {
-    isAdReady = false;
-    console.warn('[UnityAds] Load error:', error?.message || error);
+    isRewardedAdReady = false;
+    console.warn('[UnityAds] Rewarded load error:', error?.message || error);
   }
 }
 
@@ -92,7 +98,7 @@ export async function showRewardedAd(): Promise<boolean> {
 
   try {
     // If ad isn't loaded yet, load it first
-    if (!isAdReady) {
+    if (!isRewardedAdReady) {
       await UnityAdsNative.loadAd(REWARDED_PLACEMENT);
     }
 
@@ -100,13 +106,13 @@ export async function showRewardedAd(): Promise<boolean> {
     const rewarded: boolean = await UnityAdsNative.showAd(REWARDED_PLACEMENT);
 
     // Pre-load next ad
-    isAdReady = false;
+    isRewardedAdReady = false;
     preloadRewardedAd();
 
     return rewarded;
   } catch (error: any) {
-    console.warn('[UnityAds] Show error:', error?.message || error);
-    isAdReady = false;
+    console.warn('[UnityAds] Rewarded show error:', error?.message || error);
+    isRewardedAdReady = false;
     preloadRewardedAd(); // Try to recover
     throw new Error(`Ad failed: ${error?.message || 'Unknown error'}`);
   }
@@ -115,9 +121,80 @@ export async function showRewardedAd(): Promise<boolean> {
 /**
  * Check if a rewarded ad is ready to show.
  */
-export function isRewardedAdReady(): boolean {
-  return isAdReady;
+export function isRewardedReady(): boolean {
+  return isRewardedAdReady;
 }
+
+// Legacy export
+export { isRewardedReady as isRewardedAdReady };
+
+// ═══════════════════════════════════════
+//  Interstitial Ads
+// ═══════════════════════════════════════
+
+/**
+ * Preload an interstitial ad so it's ready to show.
+ */
+export async function preloadInterstitialAd(): Promise<void> {
+  if (!UnityAdsNative) {
+    isInterstitialReady = true; // Stub for Expo Go
+    return;
+  }
+
+  try {
+    await UnityAdsNative.loadAd(INTERSTITIAL_PLACEMENT);
+    isInterstitialReady = true;
+    console.log('[UnityAds] ✅ Interstitial ad loaded');
+  } catch (error: any) {
+    isInterstitialReady = false;
+    console.warn('[UnityAds] Interstitial load error:', error?.message || error);
+  }
+}
+
+/**
+ * Show an interstitial ad (non-blocking, fire-and-forget).
+ * Returns true if shown successfully, false otherwise.
+ */
+export async function showInterstitialAd(): Promise<boolean> {
+  if (!UnityAdsNative) {
+    console.log('[UnityAds] No native module — skipping interstitial (dev mode)');
+    return true;
+  }
+
+  if (!isInitialized) {
+    await initializeUnityAds();
+  }
+
+  try {
+    if (!isInterstitialReady) {
+      await UnityAdsNative.loadAd(INTERSTITIAL_PLACEMENT);
+    }
+
+    await UnityAdsNative.showAd(INTERSTITIAL_PLACEMENT);
+
+    // Pre-load next interstitial
+    isInterstitialReady = false;
+    preloadInterstitialAd();
+
+    return true;
+  } catch (error: any) {
+    console.warn('[UnityAds] Interstitial show error:', error?.message || error);
+    isInterstitialReady = false;
+    preloadInterstitialAd(); // Try to recover
+    return false;
+  }
+}
+
+/**
+ * Check if an interstitial ad is ready to show.
+ */
+export function isInterstitialAdReady(): boolean {
+  return isInterstitialReady;
+}
+
+// ═══════════════════════════════════════
+//  Config
+// ═══════════════════════════════════════
 
 /**
  * Get Unity Ads configuration for reference.

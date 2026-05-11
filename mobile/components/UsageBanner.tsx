@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/theme';
-import { useUsageStore, FREE_DAILY_LIMIT } from '../store/usageStore';
+import { useUsageStore, FREE_CYCLE_LIMIT } from '../store/usageStore';
 
 interface UsageBannerProps {
   onOpenFarm?: () => void;
@@ -34,11 +34,17 @@ export default function UsageBanner({ onOpenFarm }: UsageBannerProps) {
   }
 
   if (status === 'unlimited_daily') {
+    // 6-hour cycle unlock
+    const expiry = useUsageStore.getState().cycleUnlockExpiry;
+    const hoursLeft = expiry
+      ? Math.max(0, Math.ceil((new Date(expiry).getTime() - Date.now()) / (60 * 60 * 1000)))
+      : 0;
+
     return (
       <View style={[styles.banner, styles.bannerUnlocked]}>
         <Ionicons name="infinite" size={18} color={Colors.accent.primary} />
         <Text style={styles.bannerText}>
-          <Text style={styles.highlight}>Unlimited today</Text> • resets tomorrow
+          <Text style={styles.highlight}>Unlimited</Text> • {hoursLeft}h remaining
         </Text>
       </View>
     );
@@ -65,7 +71,7 @@ export default function UsageBanner({ onOpenFarm }: UsageBannerProps) {
     <View style={[styles.banner, styles.bannerFree]}>
       <Ionicons name="sparkles" size={16} color={Colors.accent.primary} />
       <Text style={styles.bannerText}>
-        <Text style={styles.highlight}>{remaining}</Text> of {FREE_DAILY_LIMIT} free downloads remaining
+        <Text style={styles.highlight}>{remaining}</Text> of {FREE_CYCLE_LIMIT} free downloads remaining
       </Text>
       {farmAdsWatched > 0 && (
         <TouchableOpacity onPress={onOpenFarm} style={styles.farmChip}>
