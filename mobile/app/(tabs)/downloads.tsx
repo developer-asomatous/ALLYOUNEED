@@ -9,6 +9,7 @@ import { useAppStore, DownloadJob } from '../../store/appStore';
 import { Colors, Spacing, BorderRadius, FontSize, Shadows, PLATFORM_ICONS, API_BASE_URL } from '../../constants/theme';
 import { formatBytes, timeAgo } from '../../utils/helpers';
 import VideoPlayer from '../../components/VideoPlayer';
+import { UnityBannerAd } from '../../services/admob';
 
 const ITEM_HEIGHT = 130;
 const ITEM_MARGIN = 8;
@@ -196,6 +197,11 @@ export default function DownloadsScreen() {
         <FlatList data={downloads} keyExtractor={keyExtractor} renderItem={renderItem} getItemLayout={getItemLayout} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false} maxToRenderPerBatch={8} windowSize={5} initialNumToRender={6} removeClippedSubviews={Platform.OS === 'android'} />
       )}
       <VideoPlayer visible={playerVisible} uri={playerUri} title={playerItem?.title || ''} thumbnail={playerItem?.thumbnail} initialPosition={playerItem?.lastPlaybackPosition || 0} onPositionUpdate={handlePositionUpdate} onClose={() => { setPlayerVisible(false); setPlayerItem(null); setPlayerUri(''); }} />
+      
+      {/* Banner Ad */}
+      <View style={styles.bannerWrap}>
+        <UnityBannerAd />
+      </View>
     </SafeAreaView>
   );
 }
@@ -241,4 +247,12 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.bg.card, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.lg },
   emptyTitle: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.text.secondary, marginBottom: 6 },
   emptySubtext: { fontSize: FontSize.md, color: Colors.text.muted, textAlign: 'center', maxWidth: 250 },
+  bannerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.bg.primary,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: Colors.border.subtle,
+  },
 });

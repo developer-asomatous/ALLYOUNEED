@@ -19,7 +19,7 @@ import OfflineBanner from '../../components/OfflineBanner';
 import { MediaCardSkeleton } from '../../components/SkeletonLoader';
 import ToastNotification from '../../components/ToastNotification';
 import { showDownloadStarted, showDownloadComplete, showDownloadFailed, updateDownloadProgress, shouldNotifyProgress, clearProgressThrottle } from '../../services/notifications';
-import { showInterstitialAd } from '../../services/admob';
+import { showInterstitialAd, UnityBannerAd } from '../../services/admob';
 
 const FETCH_STAGES = ['Resolving link...', 'Waking up server...', 'Fetching media info...', 'Processing formats...'];
 
@@ -127,6 +127,13 @@ export default function HomeScreen() {
       setFetchStage(2); // 'Fetching media info...'
       const info = await fetchInfo(resolvedUrl);
       setMediaInfo(info);
+      
+      // Show interstitial on successful fetch (if interval reached)
+      if (shouldShowInterstitial()) {
+        resetInterstitialCounter();
+        showInterstitialAd().catch(() => {});
+      }
+
       if (info.isImage) setMediaType('image');
       if (info.formats.length > 0) {
         const targetType = info.isImage ? 'image' : 'video';
@@ -394,6 +401,11 @@ export default function HomeScreen() {
       </KeyboardAvoidingView>
       <UsageGate visible={showUsageGate} onClose={() => setShowUsageGate(false)} onUnlocked={() => { setShowUsageGate(false); handleDownload(); }} />
       <ToastNotification visible={toast.visible} type={toast.type} title={toast.title} message={toast.message} onDismiss={() => setToast(t => ({ ...t, visible: false }))} />
+      
+      {/* Banner Ad */}
+      <View style={s.bannerWrap}>
+        <UnityBannerAd />
+      </View>
     </SafeAreaView>
   );
 }
@@ -462,4 +474,12 @@ const s = StyleSheet.create({
   fmtCalloutRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   fmtDot: { width: 6, height: 6, borderRadius: 3 },
   fmtCalloutText: { fontSize: 12, color: Colors.text.muted, fontWeight: '600' },
+  bannerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.bg.primary,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: Colors.border.subtle,
+  },
 });

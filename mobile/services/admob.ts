@@ -14,7 +14,10 @@ import { NativeModules, Platform } from 'react-native';
  * Placement IDs:
  *   Rewarded: Rewarded_Android / Rewarded_iOS
  *   Interstitial: Interstitial_Android / Interstitial_iOS
+ *   Banner: Banner_Android / Banner_iOS
  */
+
+import { NativeModules, Platform, requireNativeComponent, ViewProps } from 'react-native';
 
 // ── Native Module ──
 const UnityAdsNative = NativeModules.UnityAdsModule;
@@ -23,6 +26,7 @@ const UnityAdsNative = NativeModules.UnityAdsModule;
 const UNITY_GAME_ID = Platform.OS === 'ios' ? '6111205' : '6111204';
 const REWARDED_PLACEMENT = Platform.OS === 'ios' ? 'Rewarded_iOS' : 'Rewarded_Android';
 const INTERSTITIAL_PLACEMENT = Platform.OS === 'ios' ? 'Interstitial_iOS' : 'Interstitial_Android';
+const BANNER_PLACEMENT = Platform.OS === 'ios' ? 'Banner_iOS' : 'Banner_Android';
 // Production mode — placements verified on Unity Dashboard
 const TEST_MODE = false;
 
@@ -204,7 +208,30 @@ export function getUnityAdsConfig() {
     gameId: UNITY_GAME_ID,
     rewardedPlacement: REWARDED_PLACEMENT,
     interstitialPlacement: INTERSTITIAL_PLACEMENT,
+    bannerPlacement: BANNER_PLACEMENT,
     testMode: TEST_MODE,
     nativeAvailable: !!UnityAdsNative,
   };
 }
+
+// ── Banner Component ──
+const UnityBannerView = requireNativeComponent<any>('UnityBannerView');
+
+interface UnityBannerAdProps extends ViewProps {
+  placementId?: string;
+}
+
+/**
+ * React Component to display a Unity Ads Banner.
+ */
+export const UnityBannerAd = (props: UnityBannerAdProps) => {
+  if (!UnityAdsNative) return null;
+  
+  return (
+    <UnityBannerView
+      {...props}
+      placementId={props.placementId || BANNER_PLACEMENT}
+      style={[{ width: 320, height: 50 }, props.style]}
+    />
+  );
+};
