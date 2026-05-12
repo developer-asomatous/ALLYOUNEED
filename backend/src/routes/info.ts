@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { fetchMediaInfo } from '../services/ytdlp';
 import { isTorrentInput, fetchTorrentInfo } from '../services/torrent';
+import { scrapeForumPage } from '../services/scraper';
 
 const URL_REGEX = /^https?:\/\/.+/;
 const MAGNET_REGEX = /^magnet:\?/;
@@ -56,17 +57,35 @@ export async function infoRoute(server: FastifyInstance) {
         return reply.send(cached);
       }
 
-      // Route to torrent engine if magnet/torrent/infohash
+      // 1. Direct Torrent/Magnet check
       if (isTorrentInput(url)) {
         const info = await fetchTorrentInfo(url);
         setCachedInfo(url, info);
         return reply.send(info);
       }
 
-      // Regular URL → yt-dlp
-      const info = await fetchMediaInfo(url);
-      setCachedInfo(url, info);
-      return reply.send(info);
+      // 2. Forum Scraper (e.g. 1TamilMV, TamilBlasters)
+      if (url.includes('1tamilmv') || url.includes('tamilblasters') || url.includes('forum') || url.includes('topic')) {
+        try {
+          const info = await scrapeForumPage(url);
+          setCachedInfo(url, info);
+          return reply.send(info);
+        } catch (e) {
+          // If scraper fails, continue to yt-dlp
+        }
+      }
+
+      // 3. Regular URL → yt-dlp
+      try {
+        const info = await fetchMediaInfo(url);
+        setCachedInfo(url, info);
+        return reply.send(info);
+      } catch (err) {
+        // Final fallback: try scraping ANY URL as a page for links
+        const info = await scrapeForumPage(url);
+        setCachedInfo(url, info);
+        return reply.send(info);
+      }
     } catch (err: any) {
       server.log.error(`Info fetch failed: ${err.message}`);
       return reply.status(500).send({
