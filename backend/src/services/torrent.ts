@@ -123,17 +123,14 @@ export async function downloadTorrentFile(
       '--dir', outputDir,
       '--seed-time', '0',
       '--summary-interval', '1',
-      '--bt-stop-timeout', '300',
-      '--bt-tracker-connect-timeout', '10',
-      '--bt-tracker-timeout', '10',
-      '--bt-min-crypto-level', 'arc4', 
-      '--bt-require-crypto', 'true',
-      '--bt-request-peer-speed-limit', '50K',
+      '--bt-stop-timeout', '600', // Increase to 10 mins
+      '--bt-tracker-connect-timeout', '20',
+      '--bt-tracker-timeout', '20',
+      '--bt-min-crypto-level', 'plain', // More compatible
+      '--bt-require-crypto', 'false',
       '--enable-dht', 'true',
       '--bt-enable-lpd', 'false',
       '--enable-peer-exchange', 'true',
-      '--listen-port', '0', // Disable incoming port (Render blocks this)
-      '--dht-listen-port', '0',
       '--user-agent', 'qBittorrent/4.6.3', 
       // High-performance public trackers
       '--bt-tracker', [
@@ -177,7 +174,7 @@ export async function downloadTorrentFile(
           reject(new Error('Torrent downloaded but file not found in output directory'));
         }
       } else {
-        reject(new Error(`aria2c torrent download failed (code ${code}): ${stderr}`));
+        reject(new Error(`aria2c torrent download failed (code ${code}): ${stderr.slice(0, 1000)}`));
       }
     });
   });
