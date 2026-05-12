@@ -121,8 +121,29 @@ export async function downloadTorrentFile(
   return new Promise((resolve, reject) => {
     const args = [
       '--dir', outputDir,
-      '--seed-time', '0', // Stop seeding immediately after download
+      '--seed-time', '0',
       '--summary-interval', '1',
+      '--bt-stop-timeout', '300', // Stop if no progress for 5 mins
+      '--bt-tracker-connect-timeout', '10',
+      '--bt-tracker-timeout', '10',
+      '--listen-port', '6881-6999',
+      '--dht-listen-port', '6881-6999',
+      '--enable-dht=true',
+      '--enable-peer-exchange=true',
+      '--bt-enable-lpd=true',
+      // High-performance public trackers to find peers fast
+      '--bt-tracker', [
+        'udp://tracker.opentrackr.org:1337/announce',
+        'udp://9.rarbg.com:2810/announce',
+        'udp://tracker.openbittorrent.com:6969/announce',
+        'udp://exodus.desync.com:6969/announce',
+        'udp://open.stealth.si:80/announce',
+        'udp://tracker.torrent.eu.org:451/announce',
+        'udp://tracker.moeking.me:6969/announce',
+        'udp://explodie.org:6969/announce',
+        'udp://tracker.tiny-vps.com:6969/announce',
+        'udp://zephir.monocul.us:6969/announce'
+      ].join(','),
       magnetOrUrl
     ];
 
