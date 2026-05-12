@@ -9,11 +9,50 @@ import { jobCleanupRoute } from './routes/cleanup';
 import { entitlementRoute } from './routes/entitlement';
 import { cookieRoute } from './routes/cookies';
 
+import { getYtdlpVersion, isFfmpegAvailable } from './services/ytdlp';
+import { isAria2cAvailable } from './services/accelerator';
+
 const server = Fastify({
-  logger: true, // Simple built-in logger, no pino-pretty needed
+  logger: true,
 });
 
+async function checkDependencies() {
+  server.log.info('🔍 Checking system dependencies...');
+  
+  const errors: string[] = [];
+
+  // 1. yt-dlp (Critical)
+  try {
+    const version = getYtdlpVersion();
+    server.log.info(`✅ yt-dlp: ${version}`);
+  } catch (e: any) {
+    errors.push(`❌ yt-dlp NOT FOUND: ${e.message}`);
+  }
+
+  // 2. ffmpeg (Critical for Audio)
+  if (isFfmpegAvailable()) {
+    server.log.info('✅ ffmpeg: Available');
+  } else {
+    errors.push('❌ ffmpeg NOT FOUND: Required for merging video and audio.');
+  }
+
+  // 3. aria2c (Critical for Speed & Magnets)
+  if (isAria2cAvailable()) {
+    server.log.info('✅ aria2c: Available');
+  } else {
+    errors.push('❌ aria2c NOT FOUND: Required for 16x speed and Magnet links.');
+  }
+
+  if (errors.length > 0) {
+    server.log.error('🛑 FATAL: Missing dependencies. Server cannot start.');
+    errors.forEach(err => server.log.error(err));
+    server.log.error('Please install missing tools: brew install yt-dlp ffmpeg aria2');
+    process.exit(1);
+  }
+}
+
 async function start() {
+  await checkDependencies();
   // CORS — allow all origins for dev
   await server.register(cors, {
     origin: '*',

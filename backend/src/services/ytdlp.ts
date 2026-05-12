@@ -34,6 +34,10 @@ try {
   YTDLP_BIN = 'yt-dlp';
 }
 
+export function getYtdlpVersion(): string {
+  return execSync(`${YTDLP_BIN} --version`).toString().trim();
+}
+
 // Resolve ffmpeg binary path
 const FFMPEG_PATHS = [
   '/usr/local/bin/ffmpeg',
@@ -61,6 +65,10 @@ try {
     console.warn('⚠️  ffmpeg NOT found. High-quality video downloads will NOT have audio.');
   }
 } catch {}
+
+export function isFfmpegAvailable(): boolean {
+  return FFMPEG_BIN !== null;
+}
 
 // Cookie support for YouTube bot detection bypass
 const COOKIES_PATH = '/tmp/yt-cookies.txt';
