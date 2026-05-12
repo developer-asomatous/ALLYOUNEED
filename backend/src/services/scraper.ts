@@ -27,11 +27,16 @@ export async function scrapeForumPage(url: string): Promise<MediaInfo> {
 
   // Add magnets as formats
   magnets.forEach((mag, i) => {
-    const name = decodeURIComponent(mag.match(/dn=([^&]+)/)?.[1] || `Magnet ${i + 1}`).replace(/\+/g, ' ');
+    const name = decodeURIComponent(mag.match(/dn=([^&]+)/)?.[1] || '').replace(/\+/g, ' ');
+    
+    // Extract quality from name (e.g. 1080p, 720p, 4K)
+    const qualityMatch = name.match(/\b(2160p|1080p|720p|480p|360p|4K|HDR|HEVC|x265|x264|DVDRip)\b/i);
+    const quality = qualityMatch ? qualityMatch[0] : 'Magnet';
+
     formats.push({
       id: mag,
-      ext: 'torrent',
-      quality: 'Magnet',
+      ext: 'mkv',
+      quality: quality + (name ? ` (${name.substring(0, 30)}...)` : ` #${i+1}`),
       filesize: null,
       type: 'video',
       isCombined: true

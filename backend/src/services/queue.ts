@@ -116,10 +116,13 @@ async function processJob(jobId: string, params: {
     // Determine download method
     let resultPath: string;
 
-    // ── Torrent downloads ──
-    if (isTorrentInput(url) || (formatId && formatId.startsWith('torrent-file-'))) {
-      const torrentFileIndex = fileIndex ?? (formatId ? parseInt(formatId.replace('torrent-file-', ''), 10) : 0);
-      resultPath = await downloadTorrentFile(url, torrentFileIndex, STORAGE_PATH, (progress, speed, eta) => {
+    // ── Torrent / Magnet downloads ──
+    const isMagnetFormat = formatId && formatId.startsWith('magnet:');
+    if (isTorrentInput(url) || isMagnetFormat || (formatId && formatId.startsWith('torrent-file-'))) {
+      const torrentFileIndex = fileIndex ?? (formatId && formatId.startsWith('torrent-file-') ? parseInt(formatId.replace('torrent-file-', ''), 10) : 0);
+      const torrentSource = isMagnetFormat ? formatId : url;
+      
+      resultPath = await downloadTorrentFile(torrentSource, torrentFileIndex, STORAGE_PATH, (progress, speed, eta) => {
         state.progress = progress;
         state.speed = speed;
         state.eta = eta;
