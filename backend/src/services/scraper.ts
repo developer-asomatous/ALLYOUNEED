@@ -52,11 +52,23 @@ export async function scrapeForumPage(url: string): Promise<MediaInfo> {
   // Add direct links
   directLinks.forEach((link, i) => {
     const ext = link.split('.').pop()?.toLowerCase() || 'mp4';
+    
+    // Find context around this direct link
+    const index = html.indexOf(link);
+    const context = index !== -1 
+      ? html.substring(Math.max(0, index - 300), Math.min(html.length, index + link.length + 300))
+      : '';
+    
+    const sizeMatch = context.match(/(\d+\.?\d*)\s*(GB|MB|GiB|MiB)/i);
+    const sizeStr = sizeMatch ? `[${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}]` : '';
+    const qualityMatch = context.match(/\b(2160p|1080p|720p|480p|4K|HQ|WEB-DL)\b/i);
+    const quality = qualityMatch ? qualityMatch[0] : 'Direct';
+
     formats.push({
       id: `direct-${i}`,
       ext,
-      quality: 'Direct Link',
-      filesize: null,
+      quality: `${sizeStr} ${quality} Link`.trim(),
+      filesize: sizeMatch ? parseSize(sizeMatch[1], sizeMatch[2]) : null,
       type: 'video',
       isCombined: true,
       directUrl: link
