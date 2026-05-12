@@ -34,6 +34,34 @@ try {
   YTDLP_BIN = 'yt-dlp';
 }
 
+// Resolve ffmpeg binary path
+const FFMPEG_PATHS = [
+  '/usr/local/bin/ffmpeg',
+  '/opt/homebrew/bin/ffmpeg',
+  '/usr/bin/ffmpeg',
+  'ffmpeg',
+];
+
+function getFfmpegPath(): string | null {
+  for (const p of FFMPEG_PATHS) {
+    try {
+      execSync(`${p} -version`, { timeout: 3000, stdio: 'pipe' });
+      return p;
+    } catch {}
+  }
+  return null;
+}
+
+let FFMPEG_BIN: string | null = null;
+try {
+  FFMPEG_BIN = getFfmpegPath();
+  if (FFMPEG_BIN) {
+    console.log(`✅ ffmpeg found at: ${FFMPEG_BIN}`);
+  } else {
+    console.warn('⚠️  ffmpeg NOT found. High-quality video downloads will NOT have audio.');
+  }
+} catch {}
+
 // Cookie support for YouTube bot detection bypass
 const COOKIES_PATH = '/tmp/yt-cookies.txt';
 let COOKIES_AVAILABLE = false;
@@ -88,6 +116,7 @@ export interface MediaFormat {
   acodec?: string;
   abr?: number;
   type: 'video' | 'audio' | 'image';
+  isCombined?: boolean; // True if format includes both video and audio
   directUrl?: string; // CDN download URL for direct client-side download
 }
 
@@ -265,7 +294,7 @@ export function fetchMediaInfo(url: string): Promise<MediaInfo> {
       '--no-warnings',
       '--no-check-certificates',
       '--skip-download',
-      '--socket-timeout', '15',
+      '--socket-timeout', '60',
       '--extractor-retries', '3',
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       '--add-header', 'Accept-Language:en-US,en;q=0.9',
@@ -426,10 +455,17 @@ export function downloadMedia(
       args.push('--audio-format', options.outputFormat || 'mp3');
       args.push('--audio-quality', options.audioQuality || '0');
     } else if (options.formatId) {
-      // Try format+audio, fallback to just the format, then best
-      args.push('-f', `${options.formatId}+bestaudio/${options.formatId}/best`);
-      if (options.outputFormat) {
-        args.push('--merge-output-format', options.outputFormat);
+      if (FFMPEG_BIN) {
+        // Try format+audio, fallback to just the format, then best
+        args.push('-f', `${options.formatId}+bestaudio/${options.formatId}/best`);
+        if (options.outputFormat) {
+          args.push('--merge-output-format', options.outputFormat);
+        }
+      } else {
+        // No ffmpeg — must use a combined format or just the requested one
+        // 'best' usually picks the best combined format (often 720p)
+        console.warn(`[yt-dlp] No ffmpeg — falling back to single-stream for ${options.formatId}`);
+        args.push('-f', `${options.formatId}/best`);
       }
     } else {
       args.push('-f', 'best');
@@ -564,6 +600,7 @@ function parseFormats(rawFormats: any[]): MediaFormat[] {
       acodec: f.acodec !== 'none' ? f.acodec : undefined,
       abr: f.abr || undefined,
       type,
+      isCombined: f.vcodec !== 'none' && f.acodec !== 'none',
       directUrl: f.url || undefined, // CDN URL for direct download
     });
   }
