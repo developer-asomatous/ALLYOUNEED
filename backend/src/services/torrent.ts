@@ -120,20 +120,19 @@ export async function downloadTorrentFile(
 
   return new Promise((resolve, reject) => {
     const args = [
-      '--dir', outputDir,
-      '--seed-time', '0',
-      '--summary-interval', '1',
-      '--bt-stop-timeout', '600', // Increase to 10 mins
-      '--bt-tracker-connect-timeout', '20',
-      '--bt-tracker-timeout', '20',
-      '--bt-min-crypto-level', 'plain', // More compatible
-      '--bt-require-crypto', 'false',
-      '--enable-dht', 'true',
-      '--bt-enable-lpd', 'false',
-      '--enable-peer-exchange', 'true',
-      '--user-agent', 'qBittorrent/4.6.3', 
-      // High-performance public trackers
-      '--bt-tracker', [
+      `--dir=${outputDir}`,
+      '--seed-time=0',
+      '--summary-interval=1',
+      '--bt-stop-timeout=600',
+      '--bt-tracker-connect-timeout=20',
+      '--bt-tracker-timeout=20',
+      '--bt-min-crypto-level=plain',
+      '--bt-require-crypto=false',
+      '--enable-dht=true',
+      '--bt-enable-lpd=false',
+      '--enable-peer-exchange=true',
+      '--user-agent=qBittorrent/4.6.3',
+      `--bt-tracker=${[
         'udp://tracker.opentrackr.org:1337/announce',
         'udp://9.rarbg.com:2810/announce',
         'udp://tracker.openbittorrent.com:6969/announce',
@@ -144,7 +143,7 @@ export async function downloadTorrentFile(
         'udp://explodie.org:6969/announce',
         'udp://tracker.tiny-vps.com:6969/announce',
         'udp://zephir.monocul.us:6969/announce'
-      ].join(','),
+      ].join(',')}`,
       magnetOrUrl
     ];
 
