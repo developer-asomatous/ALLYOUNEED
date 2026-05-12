@@ -17,6 +17,7 @@ const jobStates = new Map<string, {
   progress: number;
   speed: string;
   eta: string;
+  totalSize: number | null;
   downloadUrl: string | null;
   filePath: string | null;
   error: string | null;
@@ -63,6 +64,7 @@ export async function createDownloadJob(params: {
     progress: 0,
     speed: '0 B/s',
     eta: '--:--',
+    totalSize: null,
     downloadUrl: null,
     filePath: null,
     error: null,

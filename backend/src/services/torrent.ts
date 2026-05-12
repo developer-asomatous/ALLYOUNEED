@@ -123,15 +123,19 @@ export async function downloadTorrentFile(
       '--dir', outputDir,
       '--seed-time', '0',
       '--summary-interval', '1',
-      '--bt-stop-timeout', '300', // Stop if no progress for 5 mins
+      '--bt-stop-timeout', '300',
       '--bt-tracker-connect-timeout', '10',
       '--bt-tracker-timeout', '10',
-      '--listen-port', '6881-6999',
-      '--dht-listen-port', '6881-6999',
-      '--enable-dht=true',
-      '--enable-peer-exchange=true',
-      '--bt-enable-lpd=true',
-      // High-performance public trackers to find peers fast
+      '--bt-min-crypto-level', 'arc4', 
+      '--bt-require-crypto', 'true',
+      '--bt-request-peer-speed-limit', '50K',
+      '--enable-dht', 'true',
+      '--bt-enable-lpd', 'false',
+      '--enable-peer-exchange', 'true',
+      '--listen-port', '0', // Disable incoming port (Render blocks this)
+      '--dht-listen-port', '0',
+      '--user-agent', 'qBittorrent/4.6.3', 
+      // High-performance public trackers
       '--bt-tracker', [
         'udp://tracker.opentrackr.org:1337/announce',
         'udp://9.rarbg.com:2810/announce',

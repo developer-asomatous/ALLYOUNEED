@@ -63,7 +63,7 @@ export async function streamRoute(server: FastifyInstance) {
       return reply.status(404).send({ error: 'Job not found' });
     }
 
-    if (status.status !== 'done' || !status.filePath) {
+    if ((status.status !== 'done' && status.status !== 'downloading') || !status.filePath) {
       return reply.status(400).send({ error: 'Download not ready' });
     }
 
@@ -72,7 +72,8 @@ export async function streamRoute(server: FastifyInstance) {
     }
 
     const stat = fs.statSync(status.filePath);
-    const totalSize = stat.size;
+    // Use the final totalSize from source if we have it, otherwise current size
+    const totalSize = status.totalSize || stat.size;
     const ext = path.extname(status.filePath).slice(1).toLowerCase();
     const contentType = MIME_MAP[ext] || 'application/octet-stream';
     const filename = `ayn_${jobId}.${ext}`;
