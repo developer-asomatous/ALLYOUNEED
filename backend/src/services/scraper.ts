@@ -146,8 +146,8 @@ function extractDirectLinks(html: string, baseUrl: string): string[] {
     matches.push(link);
   }
 
-  // 2. Look for common file hosting links (PixelDrain, MultiUp, GDTot, etc.)
-  const hostRegex = /href="(https?:\/\/(?:pixeldrain\.com|multiup\.org|gdtot\.[^/]+|doodstream\.com|streamtape\.com|voe\.sx)\/[^"]+)"/gi;
+  // 2. Look for common file hosting links and .torrent attachments
+  const hostRegex = /href="(https?:\/\/(?:pixeldrain\.com|multiup\.org|gdtot\.[^/]+|doodstream\.com|streamtape\.com|voe\.sx|[^/]+\.gratis\/applications\/core\/interface\/file\/attachment\.php\?id=\d+)[^"]*)"/gi;
   while ((m = hostRegex.exec(html)) !== null) {
     matches.push(m[1]);
   }
