@@ -16,7 +16,7 @@ import { MediaInfo, MediaFormat } from './ytdlp';
 export async function scrapeForumPage(url: string): Promise<MediaInfo> {
   const html = await fetchHtml(url);
   
-  const magnets = extractMagnets(html);
+  const magnets = findMagnetsWithContext(html);
   const directLinks = extractDirectLinks(html, url);
   
   if (magnets.length === 0 && directLinks.length === 0) {
@@ -27,17 +27,23 @@ export async function scrapeForumPage(url: string): Promise<MediaInfo> {
 
   // Add magnets as formats
   magnets.forEach((mag, i) => {
-    const name = decodeURIComponent(mag.match(/dn=([^&]+)/)?.[1] || '').replace(/\+/g, ' ');
+    const uri = mag.uri;
+    const name = decodeURIComponent(uri.match(/dn=([^&]+)/)?.[1] || '').replace(/\+/g, ' ');
     
-    // Extract quality from name (e.g. 1080p, 720p, 4K)
+    // 1. Extract quality from name
     const qualityMatch = name.match(/\b(2160p|1080p|720p|480p|360p|4K|HDR|HEVC|x265|x264|DVDRip)\b/i);
-    const quality = qualityMatch ? qualityMatch[0] : 'Magnet';
+    let quality = qualityMatch ? qualityMatch[0] : 'Magnet';
+
+    // 2. Extract size from surrounding HTML context (200 chars before/after)
+    const context = html.substring(Math.max(0, mag.index - 300), Math.min(html.length, mag.index + uri.length + 300));
+    const sizeMatch = context.match(/(\d+\.?\d*)\s*(GB|MB|GiB|MiB)/i);
+    const sizeStr = sizeMatch ? `[${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}]` : '';
 
     formats.push({
-      id: mag,
+      id: uri,
       ext: 'mkv',
-      quality: quality + (name ? ` (${name.substring(0, 30)}...)` : ` #${i+1}`),
-      filesize: null,
+      quality: `${sizeStr} ${quality}`.trim() + (name ? ` - ${name.substring(0, 35)}...` : ` #${i+1}`),
+      filesize: sizeMatch ? parseSize(sizeMatch[1], sizeMatch[2]) : null,
       type: 'video',
       isCombined: true
     });
@@ -103,11 +109,27 @@ function fetchHtml(url: string, redirects = 0): Promise<string> {
   });
 }
 
-function extractMagnets(html: string): string[] {
-  // Broader regex to catch entire magnet URI
+function parseSize(num: string, unit: string): number {
+  const val = parseFloat(num);
+  const u = unit.toUpperCase();
+  if (u.includes('GB') || u.includes('GIB')) return val * 1024 * 1024 * 1024;
+  if (u.includes('MB') || u.includes('MIB')) return val * 1024 * 1024;
+  return val;
+}
+
+function findMagnetsWithContext(html: string): { uri: string; index: number }[] {
   const regex = /magnet:\?xt=urn:[a-zA-Z0-9:]+(&[a-zA-Z0-9%=&._-]+)*/g;
-  const matches = html.match(regex) || [];
-  return Array.from(new Set(matches)); // Unique magnets
+  const results: { uri: string; index: number }[] = [];
+  let m;
+  const seen = new Set<string>();
+
+  while ((m = regex.exec(html)) !== null) {
+    if (!seen.has(m[0])) {
+      results.push({ uri: m[0], index: m.index });
+      seen.add(m[0]);
+    }
+  }
+  return results;
 }
 
 function extractDirectLinks(html: string, baseUrl: string): string[] {

@@ -37,7 +37,7 @@ const ARIA2C_PATHS = [
   'aria2c',
 ];
 
-let ARIA2C_BIN: string | null = null;
+export let ARIA2C_BIN: string | null = null;
 
 function detectAria2c(): string | null {
   for (const p of ARIA2C_PATHS) {
