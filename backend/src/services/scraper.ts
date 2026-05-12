@@ -133,11 +133,11 @@ function findMagnetsWithContext(html: string): { uri: string; index: number }[] 
 }
 
 function extractDirectLinks(html: string, baseUrl: string): string[] {
-  // Look for links ending in media extensions
-  const regex = /href="([^"]+\.(mp4|mkv|mov|avi|wmv|ts))"/gi;
+  // 1. Look for direct media files (.mp4, .mkv, etc.)
+  const fileRegex = /href="([^"]+\.(mp4|mkv|mov|avi|wmv|ts))"/gi;
   const matches = [];
   let m;
-  while ((m = regex.exec(html)) !== null) {
+  while ((m = fileRegex.exec(html)) !== null) {
     let link = m[1];
     if (link.startsWith('/')) {
       const urlObj = new URL(baseUrl);
@@ -145,6 +145,13 @@ function extractDirectLinks(html: string, baseUrl: string): string[] {
     }
     matches.push(link);
   }
+
+  // 2. Look for common file hosting links (PixelDrain, MultiUp, GDTot, etc.)
+  const hostRegex = /href="(https?:\/\/(?:pixeldrain\.com|multiup\.org|gdtot\.[^/]+|doodstream\.com|streamtape\.com|voe\.sx)\/[^"]+)"/gi;
+  while ((m = hostRegex.exec(html)) !== null) {
+    matches.push(m[1]);
+  }
+
   return Array.from(new Set(matches));
 }
 
